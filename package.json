@@ -9,18 +9,25 @@
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "typecheck": "nuxt typecheck",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.134",
     "@iconify-json/simple-icons": "^1.2.96",
+    "@neondatabase/serverless": "^1.1.0",
     "@nuxt/ui": "^4.11.1",
+    "drizzle-orm": "^0.45.3",
     "h3": "^1.15.11",
     "nuxt": "^4.5.2",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.17.0",
+    "@types/node": "^22.20.4",
+    "dotenv": "^18.0.4",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^10.11.0",
     "eslint-plugin-better-tailwindcss": "^4.7.0",
     "typescript": "^6.0.3",

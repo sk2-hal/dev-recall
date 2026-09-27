@@ -22,6 +22,10 @@ Drizzle、DBスキーマ、API、Vitest、Playwrightはこれから導入する�
 
 STEP 6-2では、DB導入前の段階的な実装として`POST /api/projects`の入力検証のみを実装した。Bodyの`name`は空白以外を含む文字列を必須とし、不正な場合は400、正常な場合は前後の空白を除去して200と`{ name, saved: false }`を返す。保存は行わず、既存フォームとの接続も後続STEPで扱う。Vitestを導入し、`pnpm test`とCIでAPIのHTTP応答を検証する。DB・認証・Playwrightはこの段階では未導入。
 
+STEP 6-3ではDrizzleと`@neondatabase/serverless`のHTTP接続を導入した。`POST /api/projects`は同じ入力検証後に1件INSERTし、201と`{ id, name, createdAt, updatedAt }`を返す。IDはDB生成のUUID、日時はPostgreSQLの`timestamp with time zone`（APIではISO 8601文字列）。DB上の日時カラム名は`created_at` / `updated_at`とし、DrizzleでcamelCaseに対応させる。DB失敗時は詳細を引き継がず固定メッセージの500を返す。接続・保存処理は`server/db/`に置き、サーバーで`DATABASE_URL`を読み込む。Vitestでは保存関数を差し替え、実際のNeonへ接続しない。フォーム・一覧は変更せず、接続は後続STEPで扱う。
+
+マイグレーションはDrizzle Kitの`generate`でSQLとメタデータを`drizzle/`に生成し、`migrate`で明示的に適用する。起動時の自動適用や`push`による直接同期は行わない。適用・手動確認手順は[database.md](./database.md)を参照。
+
 ## 責務と配置の方針
 
 - `app/pages/`：画面、入力、表示、API呼び出し。

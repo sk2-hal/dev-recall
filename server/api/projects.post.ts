@@ -1,4 +1,5 @@
-import { createError, defineEventHandler, readBody } from 'h3'
+import { createError, defineEventHandler, readBody, setResponseStatus } from 'h3'
+import { createProject } from '../db/projects'
 
 export default defineEventHandler(async (event) => {
   const body: unknown = await readBody(event)
@@ -13,6 +14,16 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // STEP 6-2では入力の確認のみ行い、永続化はしない。
-  return { name: name.trim(), saved: false }
+  try {
+    const project = await createProject(name.trim())
+    setResponseStatus(event, 201)
+    return project
+  } catch {
+    // 元の例外には接続情報が含まれ得るため、レスポンスへ引き継がない。
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Failed to save Project',
+      message: 'Projectの保存に失敗しました。'
+    })
+  }
 })
