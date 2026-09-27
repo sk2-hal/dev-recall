@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test.beforeEach(async ({ page }) => {
+  await page.route('**/api/projects', route => route.fulfill({ json: [] }))
   await page.goto('/')
   // SSRのボタンが見えた直後ではなく、Vueが操作を受け付けるまで待つ。
   await page.waitForFunction(() => {
@@ -16,6 +17,10 @@ test('入力検証、保存中の二重送信防止、成功表示と再送信�
     finish = resolve
   })
   await page.route('**/api/projects', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [{ id: 'saved', name: 'APIから返ったProject名' }] })
+      return
+    }
     expect(route.request().method()).toBe('POST')
     requests.push(route.request().postDataJSON())
     await pending
@@ -48,12 +53,13 @@ test('入力検証、保存中の二重送信防止、成功表示と再送信�
   })
   finish()
 
-  await expect(page.getByRole('status')).toHaveText('Project「APIから返ったProject名」を保存しました。')
+  await expect(page.locator('form').getByRole('status')).toHaveText('Project「APIから返ったProject名」を保存しました。')
+  await expect(page.getByRole('heading', { name: 'APIから返ったProject名', exact: true })).toBeVisible()
   await expect(input).toHaveValue('')
   await expect(submit).toBeDisabled()
   await expect(page).toHaveURL('/')
   await input.fill('次のProject')
-  await expect(page.getByRole('status')).toHaveCount(0)
+  await expect(page.locator('form').getByRole('status')).toHaveCount(0)
   expect(requests).toHaveLength(1)
 })
 
@@ -61,6 +67,10 @@ test('400・500は内部詳細を表示せず入力を保持し、そのまま�
   const statuses = [400, 500, 201]
   const requests: unknown[] = []
   await page.route('**/api/projects', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [] })
+      return
+    }
     requests.push(route.request().postDataJSON())
     const status = statuses.shift()!
     await route.fulfill({
@@ -87,7 +97,7 @@ test('400・500は内部詳細を表示せず入力を保持し、そのまま�
     await input.fill(' DevRecall ')
   }
   await submit.click()
-  await expect(page.getByRole('status')).toHaveText('Project「DevRecall」を保存しました。')
+  await expect(page.locator('form').getByRole('status')).toHaveText('Project「DevRecall」を保存しました。')
   await expect(page.getByRole('alert')).toHaveCount(0)
   expect(requests).toEqual(Array.from({ length: 3 }, () => ({ name: 'DevRecall' })))
 })

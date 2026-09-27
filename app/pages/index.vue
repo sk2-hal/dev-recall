@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { FormError } from '@nuxt/ui'
 
+const { data: projects, status, error: listError, refresh } = useFetch('/api/projects', {
+  server: false,
+  retry: 0
+})
+
 const isCreateFormOpen = ref(false)
 const state = reactive({ name: '' })
 const isSaving = ref(false)
@@ -47,14 +52,10 @@ async function saveProject() {
   } finally {
     isSaving.value = false
   }
-}
 
-// 空状態を確認するときは、この配列を [] にする。
-const projects: { id: string, name: string }[] = [
-  { id: 'dev-recall', name: 'DevRecall' },
-  { id: 'nuxt-learning', name: 'Nuxt学習ノート' },
-  { id: 'dotnet-api', name: '.NET API開発' }
-]
+  // useFetchは再取得失敗をlistErrorへ保持する。保存結果とは別に扱う。
+  if (savedProjectName.value) await refresh()
+}
 
 useSeoMeta({
   title: 'Projects | DevRecall'
@@ -70,12 +71,6 @@ useSeoMeta({
       <p class="mt-2 text-muted">
         開発で得た判断・問題・解決・学びを、Projectごとに整理します。
       </p>
-      <UBadge
-        class="mt-4"
-        color="neutral"
-        variant="subtle"
-        label="サンプルデータ"
-      />
       <UButton
         v-if="!isCreateFormOpen"
         class="mt-4 block"
@@ -95,7 +90,7 @@ useSeoMeta({
       </template>
 
       <p class="mb-4 text-sm text-muted">
-        Projectを保存できます。一覧はサンプルデータのため、保存したProjectはまだ表示されません。
+        保存したProjectは一覧に表示されます。
       </p>
       <UForm
         :state="state"
@@ -148,7 +143,26 @@ useSeoMeta({
       </UForm>
     </UCard>
 
-    <template v-if="projects.length > 0">
+    <p
+      v-if="status === 'idle' || status === 'pending'"
+      role="status"
+      class="text-sm text-muted"
+    >
+      Project一覧を読み込み中…
+    </p>
+    <div v-else-if="listError">
+      <UAlert
+        role="alert"
+        color="error"
+        title="Project一覧の取得に失敗しました。再試行してください。"
+      />
+      <UButton
+        class="mt-4"
+        label="再試行"
+        @click="refresh()"
+      />
+    </div>
+    <template v-else-if="projects && projects.length > 0">
       <p class="mb-4 text-sm text-muted">
         {{ projects.length }}件のProject
       </p>

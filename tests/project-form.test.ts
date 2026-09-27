@@ -13,6 +13,7 @@ interface ProjectForm {
 }
 
 const fetchMock = vi.fn()
+const refreshMock = vi.fn()
 let wrapper: ReturnType<typeof shallowMount>
 let form: ProjectForm
 
@@ -22,10 +23,14 @@ beforeEach(() => {
   vi.stubGlobal('watch', watch)
   vi.stubGlobal('useSeoMeta', vi.fn())
   vi.stubGlobal('$fetch', fetchMock)
+  vi.stubGlobal('useFetch', vi.fn(() => ({
+    data: ref([]), status: ref('success'), error: ref(null), refresh: refreshMock
+  })))
+  refreshMock.mockReset().mockResolvedValue(undefined)
   fetchMock.mockReset()
   wrapper = shallowMount(ProjectsPage, {
     global: {
-      stubs: ['UContainer', 'UBadge', 'UButton', 'UCard', 'UForm', 'UFormField', 'UInput', 'UEmpty']
+      stubs: ['UContainer', 'UBadge', 'UButton', 'UCard', 'UForm', 'UFormField', 'UInput', 'UEmpty', 'UAlert']
     }
   })
   form = wrapper.vm as unknown as ProjectForm
@@ -50,6 +55,7 @@ describe('Project作成フォームの送信', () => {
     expect(form.state.name).toBe('')
     expect(form.saveError).toBe('')
     expect(form.isSaving).toBe(false)
+    expect(refreshMock).toHaveBeenCalledTimes(1)
     await form.saveProject()
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })

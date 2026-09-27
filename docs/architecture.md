@@ -30,6 +30,10 @@ STEP 6-4では既存のProject作成フォームを`$fetch`で`POST /api/project
 
 フォーム送信処理はVitestで`$fetch`を差し替えて検証し、実際のNuxt UIでの入力・保存・再試行は`pnpm test:e2e`のPlaywright 2シナリオで確認する。PlaywrightはブラウザのAPI呼び出しをモックし、専用開発サーバーでは通常の`.env`を読み込まず`DATABASE_URL`も空にする。初回は`pnpm exec playwright install chromium`でブラウザを準備する。
 
+STEP 6-5では`GET /api/projects`を追加し、一覧をDBの実データへ切り替えた。`server/db/projects.ts`でDrizzleを使って`createdAt DESC, id DESC`の順に取得し、APIは`{ id, name, createdAt, updatedAt }[]`（0件は`[]`）を返す。同日時の順序はUUIDの降順で固定する。取得失敗は内部詳細を含まない500に変換する。
+
+画面は`useFetch('/api/projects', { server: false })`でブラウザから初回取得する。読み込み・取得失敗・0件・成功を区別し、再試行ボタンと保存成功後に`refresh()`を呼ぶ。保存結果と一覧のエラーは独立して保持し、再取得失敗でも保存成功メッセージは残す。トップページのprerender指定は削除した。API・DBクエリのVitestと画面のPlaywrightはモックを使用し、Neonに接続しない。
+
 ## 責務と配置の方針
 
 - `app/pages/`：画面、入力、表示、API呼び出し。
