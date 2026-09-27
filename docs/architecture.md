@@ -20,6 +20,8 @@
 
 Drizzle、DBスキーマ、API、Vitest、Playwrightはこれから導入する。本書の以下の構成は実装方針であり、実装済みの機能ではない。既存のトップページにはprerender設定があるため、Project一覧の実装時に動的データ取得と矛盾しないよう見直す。
 
+STEP 6-2では、DB導入前の段階的な実装として`POST /api/projects`の入力検証のみを実装した。Bodyの`name`は空白以外を含む文字列を必須とし、不正な場合は400、正常な場合は前後の空白を除去して200と`{ name, saved: false }`を返す。保存は行わず、既存フォームとの接続も後続STEPで扱う。Vitestを導入し、`pnpm test`とCIでAPIのHTTP応答を検証する。DB・認証・Playwrightはこの段階では未導入。
+
 ## 責務と配置の方針
 
 - `app/pages/`：画面、入力、表示、API呼び出し。
