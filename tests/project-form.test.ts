@@ -30,7 +30,7 @@ beforeEach(() => {
   fetchMock.mockReset()
   wrapper = shallowMount(ProjectsPage, {
     global: {
-      stubs: ['UContainer', 'UBadge', 'UButton', 'UCard', 'UForm', 'UFormField', 'UInput', 'UEmpty', 'UAlert']
+      stubs: ['UContainer', 'UBadge', 'UButton', 'UCard', 'UForm', 'UFormField', 'UInput', 'UEmpty', 'UAlert', 'NuxtLink']
     }
   })
   form = wrapper.vm as unknown as ProjectForm

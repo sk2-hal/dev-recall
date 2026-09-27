@@ -173,7 +173,12 @@ useSeoMeta({
         >
           <UCard class="h-full">
             <h2 class="text-lg font-semibold text-highlighted wrap-anywhere">
-              {{ project.name }}
+              <NuxtLink
+                :to="`/projects/${project.id}`"
+                class="hover:underline"
+              >
+                {{ project.name }}
+              </NuxtLink>
             </h2>
           </UCard>
         </li>

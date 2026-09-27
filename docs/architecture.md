@@ -34,6 +34,10 @@ STEP 6-5では`GET /api/projects`を追加し、一覧をDBの実データへ切
 
 画面は`useFetch('/api/projects', { server: false })`でブラウザから初回取得する。読み込み・取得失敗・0件・成功を区別し、再試行ボタンと保存成功後に`refresh()`を呼ぶ。保存結果と一覧のエラーは独立して保持し、再取得失敗でも保存成功メッセージは残す。トップページのprerender指定は削除した。API・DBクエリのVitestと画面のPlaywrightはモックを使用し、Neonに接続しない。
 
+STEP 6-6では`GET /api/projects/:id`と`/projects/[id]`のProject詳細画面を追加した。APIはUUIDの標準表記（16進数8-4-4-4-12桁、大文字小文字を許容、バージョンは限定しない）を検証し、不正ならDBを呼ばず400を返す。`server/db/projects.ts`のDrizzleクエリでIDを条件に1件取得し、成功時は`{ id, name, createdAt, updatedAt }`、該当なしは404、DB例外は内部情報を引き継がない固定メッセージの500を返す。
+
+詳細画面もSTEP 6-5と同じ`useFetch`の`server: false, retry: 0`を採用する。直接アクセス時もブラウザから取得し、SSR時のidleと取得中のpendingを読み込み表示にする。URLのIDに応じた取得先を使い、404とその他の取得失敗を区別し、取得失敗時には手動で再試行できる。名前・作成日時（ブラウザのタイムゾーン）・一覧へ戻るリンクを表示する。一覧のProject名から詳細へ遷移できる。Entry領域は「Entry機能は今後実装します」のみで、Entryのデータ取得は行わない。API・DBテストはDB関数／接続を、E2EはAPIをモックし、実際のNeonへ接続しない。
+
 ## 責務と配置の方針
 
 - `app/pages/`：画面、入力、表示、API呼び出し。
@@ -71,7 +75,7 @@ Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任
 | 画面URL | 用途 |
 | --- | --- |
 | `/` | Projects一覧 / 新規 |
-| `/projects/[projectId]` | Entry一覧 / 検索 |
+| `/projects/[id]` | Project詳細（実装済み）、Entry一覧 / 検索（今後） |
 | `/projects/[projectId]/entries/new` | Entry作成 |
 | `/projects/[projectId]/entries/[entryId]` | 詳細 / 編集 |
 
@@ -79,6 +83,7 @@ Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任
 | --- | --- |
 | `GET /api/projects` | Project一覧 |
 | `POST /api/projects` | Project作成 |
+| `GET /api/projects/:id` | Project詳細 |
 | `GET /api/projects/:projectId/entries?q=...` | 所属Entry一覧 / 検索 |
 | `POST /api/projects/:projectId/entries` | Entry作成 |
 | `GET /api/projects/:projectId/entries/:entryId` | Entry詳細 |
