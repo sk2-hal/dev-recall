@@ -3,11 +3,19 @@ import type { FormError } from '@nuxt/ui'
 
 const isCreateFormOpen = ref(false)
 const state = reactive({ name: '' })
-const isNameChecked = ref(false)
+const isSaving = ref(false)
+const savedProjectName = ref('')
+const saveError = ref('')
+
+watch(() => state.name, () => {
+  savedProjectName.value = ''
+  saveError.value = ''
+}, { flush: 'sync' })
 
 function openCreateForm() {
   state.name = ''
-  isNameChecked.value = false
+  savedProjectName.value = ''
+  saveError.value = ''
   isCreateFormOpen.value = true
 }
 
@@ -17,9 +25,29 @@ function validateProjectName(state: { name: string }): FormError[] {
     : [{ name: 'name', message: 'Project名を入力してください（空白のみは使えません）。' }]
 }
 
-watch(() => state.name, () => {
-  isNameChecked.value = false
-})
+async function saveProject() {
+  const name = state.name.trim()
+  if (isSaving.value || !name) return
+
+  isSaving.value = true
+  savedProjectName.value = ''
+  saveError.value = ''
+  try {
+    const project = await $fetch('/api/projects', {
+      method: 'POST',
+      body: { name }
+    })
+    // 同期watchによるメッセージ消去を終えてから、今回の成功を表示する。
+    state.name = ''
+    savedProjectName.value = project.name
+  } catch (error) {
+    saveError.value = error !== null && typeof error === 'object' && 'statusCode' in error && error.statusCode === 400
+      ? 'Project名を確認して、もう一度保存してください。'
+      : 'Projectの保存に失敗しました。時間をおいて再試行してください。'
+  } finally {
+    isSaving.value = false
+  }
+}
 
 // 空状態を確認するときは、この配列を [] にする。
 const projects: { id: string, name: string }[] = [
@@ -67,13 +95,14 @@ useSeoMeta({
       </template>
 
       <p class="mb-4 text-sm text-muted">
-        現在は入力確認のみ利用できます。保存機能は未実装のため、Projectは作成・保存されません。
+        Projectを保存できます。一覧はサンプルデータのため、保存したProjectはまだ表示されません。
       </p>
       <UForm
         :state="state"
         :validate="validateProjectName"
         class="space-y-4"
-        @submit="isNameChecked = true"
+        :disabled="isSaving"
+        @submit="saveProject"
       >
         <UFormField
           label="Project名"
@@ -87,22 +116,32 @@ useSeoMeta({
           />
         </UFormField>
         <p
-          v-if="isNameChecked"
+          v-if="savedProjectName"
           role="status"
           class="text-sm text-muted"
         >
-          Project名の入力を確認しました。Projectは保存されていません。
+          Project「{{ savedProjectName }}」を保存しました。
+        </p>
+        <p
+          v-if="saveError"
+          role="alert"
+          class="text-sm text-error"
+        >
+          {{ saveError }}
         </p>
         <div class="flex gap-2">
           <UButton
             type="submit"
-            label="入力を確認"
+            :label="isSaving ? '保存中…' : '保存'"
+            :loading="isSaving"
+            :disabled="isSaving || !state.name.trim()"
           />
           <UButton
             type="button"
             label="キャンセル"
             color="neutral"
             variant="outline"
+            :disabled="isSaving"
             @click="isCreateFormOpen = false"
           />
         </div>

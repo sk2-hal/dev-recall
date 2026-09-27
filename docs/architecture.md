@@ -26,6 +26,10 @@ STEP 6-3ではDrizzleと`@neondatabase/serverless`のHTTP接続を導入した�
 
 マイグレーションはDrizzle Kitの`generate`でSQLとメタデータを`drizzle/`に生成し、`migrate`で明示的に適用する。起動時の自動適用や`push`による直接同期は行わない。適用・手動確認手順は[database.md](./database.md)を参照。
 
+STEP 6-4では既存のProject作成フォームを`$fetch`で`POST /api/projects`へ接続した。名前は前後の空白を除去して送信し、保存中は入力・保存・キャンセルを無効化する。成功時はAPIが返した名前を表示して入力欄を空にし、空欄の保存ボタンを無効にして直後の再送信を防ぐ。一覧は引き続きモックのため更新・遷移しない。失敗時は入力を保持し、400は入力確認、それ以外は再試行を促す固定メッセージを表示する。APIのエラー詳細は表示しない。
+
+フォーム送信処理はVitestで`$fetch`を差し替えて検証し、実際のNuxt UIでの入力・保存・再試行は`pnpm test:e2e`のPlaywright 2シナリオで確認する。PlaywrightはブラウザのAPI呼び出しをモックし、専用開発サーバーでは通常の`.env`を読み込まず`DATABASE_URL`も空にする。初回は`pnpm exec playwright install chromium`でブラウザを準備する。
+
 ## 責務と配置の方針
 
 - `app/pages/`：画面、入力、表示、API呼び出し。
