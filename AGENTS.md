@@ -22,7 +22,7 @@
 - パッケージ管理はpnpm 12.5.1に統一する。npm / yarn / bunのlockfileを追加しない。依存変更時はpnpm-lock.yamlも整合させる。
 - DBアクセスと秘密情報はサーバー側に置く。入力はサーバーで検証し、ProjectとEntryの所属関係も確認する。
 - DBスキーマ変更はDrizzleのマイグレーションとして残す。公開DBの破壊的変更を独断で行わない。
-- 固定TypeはDecision / Problem / Solution / Learning / Note。Entryは複数Type・自由Tagを持ち、ProblemとSolutionは別Entryにする。
+- 固定TypeはDecision / Problem / Solution / Learning / Note（保存値はdecision / problem / solution / learning / note）。Noteは他の4種類に分類しにくい汎用メモ用とする。Entryは複数Type・自由Tagを持ち、ProblemとSolutionは別Entryにする。
 - 過剰な抽象化や先回りした拡張を避ける。
 
 ## 検証

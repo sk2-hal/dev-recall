@@ -89,3 +89,34 @@ pnpm test:e2e
 
 APIテストはDB関数をモックし、作成・一覧・詳細の成功、入力不正400、対象なし404、DB失敗500とエラー詳細の非公開を検証する。DBクエリのテストも接続をモックする。E2Eでは一覧からの遷移、直接アクセス、読み込み・404・取得失敗・再試行と既存の作成・一覧機能をブラウザのAPIモックで確認する。
 実際のNeonへの接続、マイグレーション適用、永続化の確認は上記の手動手順で行う。
+
+## STEP 6-7：Entryマイグレーションと手動確認
+
+実装・自動テスト完了時点では適用しない。利用者の確認後に以下を実施する。
+
+1. Neonコンソールで開発用Project / branch / databaseを確認し、ローカル`.env`の接続先と一致することを確認する。接続文字列は出力・共有しない。シェルに別のDATABASE_URLが設定されていないことも確認する。
+2. `drizzle/0001_dry_malice.sql`をレビューする。entries追加と制約のみで、既存マイグレーションは変更しない。EntryがあるProjectはRESTRICTで削除できない。
+3. 明示的な確認後に`pnpm db:migrate`を実行する。未適用マイグレーションを順に適用する。
+4. `pnpm dev`で起動し、別PowerShellで公開可能なテストデータを送る。
+
+```powershell
+$project = Invoke-RestMethod -Uri 'http://localhost:3000/api/projects' -Method Post -ContentType 'application/json' -Body '{"name":"STEP 6-7 manual check"}'
+$entryPayload = @{ title = '  Entry manual check  '; body = '  Public sample body  '; types = @('decision', 'learning', 'note') } | ConvertTo-Json
+$entryResponse = Invoke-WebRequest -Uri "http://localhost:3000/api/projects/$($project.id)/entries" -Method Post -ContentType 'application/json' -Body $entryPayload
+$entryResponse.StatusCode
+$entryResponse.Content
+```
+
+5. 201、UUIDのid、作成Projectと同じprojectId、前後空白を除いたtitle/body、指定types、ISO日時を確認する。Neonの同じ開発用DBのSQL Editorで返ったEntry IDを指定する。
+
+```sql
+SELECT id, project_id, title, body, types, created_at, updated_at
+FROM entries
+WHERE id = '<返ったEntry UUID>'::uuid;
+```
+
+6. 1件保存されており、サーバー再起動後も残ることを確認する。空白のみのtitle/body、空配列・noteの重複・未知値（unknown）を含むtypes、不正UUIDで400、存在しないProject UUIDで404を確認する。これらのリクエストでは行が増えないことを確認する。
+
+再実行すると別のProject / Entryが追加される。Entry取得API・画面は今回未実装のためSQLで永続化を確認する。DB障害時の情報非公開・削除競合は自動テストで検証し、実DBを故意に破壊して確認しない。
+
+Typeはdecision / problem / solution / learning / noteの5種類、1〜5件・重複なし。noteは他の4種類に分類しにくい汎用メモ用。note単独および5種類すべての指定でも201と保存結果を確認する。

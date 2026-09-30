@@ -54,21 +54,19 @@ C#/.NETで考えると、Nitro APIはWeb APIのエンドポイント、Drizzle�
 | テーブル | カラム |
 | --- | --- |
 | projects | id, name, createdAt, updatedAt |
-| entries | id, projectId, title, content, createdAt, updatedAt |
-| types | id, name |
+| entries | id, projectId, title, body, types（text配列）, createdAt, updatedAt |
 | tags | id, name |
-| entry_types | entryId, typeId |
 | entry_tags | entryId, tagId |
 
 - Project 1:N Entry。`entries.projectId`で所属先を持つ。
-- Entry N:N Type、Entry N:N Tag。中間テーブルで複数選択を表現する。
-- TypeはDecision / Problem / Solution / Learning / Noteの5件を初期データとして登録する。利用者によるType追加・編集は設けない。
+- EntryのTypeはtext[]で保持する。Entry N:N Tagは将来の中間テーブルで表現する。
+- Typeはdecision / problem / solution / learning / noteの固定5種類。1件以上・重複なしで、利用者によるType追加・編集は設けない。noteは他の4種類に分類しにくい汎用メモ用とする。
 - Tagは自由入力。初期実装では全Project共通のTagマスターとし、Entryへの関連で利用する。
 - ProblemとSolutionは別Entry。Entry間のリンク用カラム・テーブルはMVPには追加しない。
 
-初期実装方針：各マスターとEntryのIDはUUID、日時はタイムゾーン付きで保存する。外部キーで関連を保証し、中間テーブルは2つのIDを複合主キーとして重複登録を防ぐ。Type名とTag名はそれぞれ一意にする。Tagの前後の空白は除去し、空文字は登録せず、同名Tagは再利用する。大文字・小文字の異なるTagは初期実装では別名として扱う。
+初期実装方針：各マスターとEntryのIDはUUID、日時はタイムゾーン付きで保存する。外部キーで関連を保証し、中間テーブルは2つのIDを複合主キーとして重複登録を防ぐ。Tag名は一意にする。Tagの前後の空白は除去し、空文字は登録せず、同名Tagは再利用する。大文字・小文字の異なるTagは初期実装では別名として扱う。
 
-Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任意とする。これらは未指定の細部を補う初期実装方針で、変更する場合は要件との整合を確認する。EntryとType / Tagの関連はトランザクションでまとめて保存し、途中失敗による不整合を防ぐ。編集時にはupdatedAtも更新する。
+Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任意とする。これらは未指定の細部を補う初期実装方針で、変更する場合は要件との整合を確認する。EntryとTypeは1回のINSERTで保存する。将来のTag関連追加時にはトランザクションでまとめて保存し、途中失敗による不整合を防ぐ。編集時にはupdatedAtも更新する。
 
 ## 画面とAPIの初期案
 
@@ -88,7 +86,6 @@ Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任
 | `POST /api/projects/:projectId/entries` | Entry作成 |
 | `GET /api/projects/:projectId/entries/:entryId` | Entry詳細 |
 | `PATCH /api/projects/:projectId/entries/:entryId` | Entry編集 |
-| `GET /api/types` | 固定Type一覧 |
 
 サーバーで必須項目、Typeの存在、ProjectとEntryの所属関係を検証する。入力不正は400、対象なしは404とし、内部エラーやDB接続情報をそのまま返さない。TagはEntryの保存時に名前から登録・再利用する。
 
@@ -113,3 +110,15 @@ NuxtアプリとNitro APIをVercelへ公開し、Neonに永続化する。DB接�
 ## Must後の拡張
 
 チャット貼付 → サーバーでAIに構造化を依頼 → Entry候補表示 → 人間が確認・修正 → 既存の保存API、の流れを追加する。AIの出力も検証し、確認前には保存しない。AIサービス、モデル、SDKは未決定。Could機能とEntry相互リンクはMustに混ぜず、別の変更として扱う。
+
+## STEP 6-7：Entry作成API
+
+`POST /api/projects/:projectId/entries`は`{ title, body, types }`を受け取り、201と`{ id, projectId, title, body, types, createdAt, updatedAt }`を返す。日時はISO 8601。Project IDは既存詳細APIと同じUUID検証を行い、不正ならDBへアクセスせず400。タイトル・本文は文字列必須でJavaScriptの`trim()`後に空なら400、前後空白を除去して保存する。Typeは5種類から1件以上・重複なしで指定し、それ以外は400。
+
+APIは`getProject`で存在確認し、未存在は404。保存は`server/db/entries.ts`へ分離する。存在確認後にProjectが削除された場合は、`entries_project_id_projects_id_fk`の外部キー違反だけを専用例外に変換して404とする。その他のDBエラーは詳細を引き継がない固定500（`Failed to save Entry`）。INSERTが先に成立した場合はRESTRICTによりProject削除が拒否される。
+
+DBはUUID主キー、NOT NULL、Project外部キー（ON DELETE RESTRICT）、タイトル・本文の空白のみを拒否するCHECK、Typeの1次元・1〜5要素・既知値のみ・NULL要素なし・重複なしのCHECKを持つ。文字列の正規化はAPIが担当し、DBの空白判定はPostgreSQLのPOSIX空白と全角スペースを対象とする（JavaScriptのtrimとはUnicode範囲が完全には同一でない）。日時はDBのnow()で初期化する。
+
+固定少数のTypeはtext[]により結合や複数INSERTが不要になる。別テーブルはType属性の拡張やマスター管理に適するが、今回その必要はなく採用しない。Tagは未実装の将来設計。環境変数追加はなく、既存DATABASE_URLを使用する。
+
+VitestはAPIのDB関数とDB接続をモックする。Playwrightは既存画面の回帰確認に加え、DB接続を無効化した実Nitroサーバーに不正Entry入力を送り400を確認する。保存成功の実DB検証は開発用Neonでの手動確認とし、自動テストでNeonを使わない。

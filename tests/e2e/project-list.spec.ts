@@ -47,7 +47,8 @@ test('保存後の再取得が失敗しても保存成功を維持し、一覧�
             ] })
   })
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: '既存Project', exact: true })).toBeVisible()
+  // 開発サーバーの初期化・ハイドレーションを含む初回取得を待つ。
+  await expect(page.getByRole('heading', { name: '既存Project', exact: true })).toBeVisible({ timeout: 15000 })
   await page.getByRole('button', { name: '新規Project', exact: true }).click()
   await page.getByRole('textbox', { name: 'Project名' }).fill('新しいProject')
   await page.getByRole('button', { name: '保存', exact: true }).click()

@@ -16,7 +16,7 @@ AI支援開発で得た判断・問題・解決・学びを、日記ではなく
 
 - Projectを作成し、一覧から選択できる。
 - Project内でEntryを作成・一覧表示・詳細表示・編集できる。
-- Entryに固定Typeを複数設定できる：Decision / Problem / Solution / Learning / Note。
+- Entryに固定Typeを複数設定できる：Decision / Problem / Solution / Learning / Note（保存値はdecision / problem / solution / learning / note）。Noteは他の4種類に分類しにくい汎用メモ用とする。
 - Entryに自由なTagを複数設定できる。
 - Project内のEntryをタイトル・本文・タグのキーワードで検索できる。
 - Project、Entry、Type・Tagとの関連をDBに永続化する。
@@ -64,3 +64,7 @@ MVPでは認証を実装しない。公開デモには公開可能なサンプ�
 ## 実装順序
 
 基盤・DB → Project作成 → Entry作成 / 一覧 / 詳細 → 編集 / 検索 → 自動テストと公開確認 → ShouldのAI構造化。テストは各変更に合わせて追加し、最後にまとめて後付けしない。1〜2週間に収めるため、Mustを優先してShould / Couldは切り離す。
+
+## STEP 6-7の範囲
+
+EntryのDB設計と作成APIを実装する。Typeは上記5種類を1件以上・重複なしで保持する。本文名はbody、Typeはtext[]とする。TagとEntry画面・一覧・編集・検索は後続STEPで扱う。EntryがあるProjectの削除は拒否し、自動削除しない。
