@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { check, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import type { EntryType } from '../../shared/entry-types'
 
 export const projects = pgTable('projects', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -7,9 +8,6 @@ export const projects = pgTable('projects', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 })
-
-export const entryTypes = ['decision', 'problem', 'solution', 'learning', 'note'] as const
-export type EntryType = typeof entryTypes[number]
 
 export const entries = pgTable('entries', {
   id: uuid('id').defaultRandom().primaryKey(),

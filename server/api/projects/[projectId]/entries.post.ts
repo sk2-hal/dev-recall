@@ -1,7 +1,7 @@
 import { createError, defineEventHandler, getRouterParam, readBody, setResponseStatus } from 'h3'
 import { createEntry, EntryProjectNotFoundError } from '../../../db/entries'
 import { getProject } from '../../../db/projects'
-import { entryTypes, type EntryType } from '../../../db/schema'
+import { entryTypes, type EntryType } from '../../../../shared/entry-types'
 
 export default defineEventHandler(async (event) => {
   const projectId = getRouterParam(event, 'projectId')

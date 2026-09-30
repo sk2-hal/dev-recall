@@ -3,7 +3,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import { createEntry, EntryProjectNotFoundError } from '../server/db/entries'
 import { getProject } from '../server/db/projects'
 import handler from '../server/api/projects/[projectId]/entries.post'
-import type { EntryType } from '../server/db/schema'
+import type { EntryType } from '../shared/entry-types'
 
 vi.mock('../server/db/projects', () => ({ getProject: vi.fn() }))
 vi.mock('../server/db/entries', () => ({ createEntry: vi.fn(), EntryProjectNotFoundError: class extends Error {} }))

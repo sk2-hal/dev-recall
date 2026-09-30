@@ -52,8 +52,13 @@ useSeoMeta({ title: 'Project詳細 | DevRecall' })
           </h2>
         </template>
         <p class="text-muted">
-          Entry機能は今後実装します
+          Entry一覧は今後実装します
         </p>
+        <UButton
+          :to="`/projects/${project.id}/entries/new`"
+          label="Entryを追加"
+          class="mt-4"
+        />
       </UCard>
     </template>
   </UContainer>

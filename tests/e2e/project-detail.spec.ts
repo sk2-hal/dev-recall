@@ -23,7 +23,7 @@ test('一覧のリンク、詳細表示、一覧への復帰と直接アクセ�
   await expect(page.getByRole('heading', { name: project.name, level: 1 })).toBeVisible()
   await expect(page.locator('time')).toHaveAttribute('datetime', project.createdAt)
   await expect(page.locator('time')).toContainText('2026')
-  await expect(page.getByText('Entry機能は今後実装します')).toBeVisible()
+  await expect(page.getByText('Entry一覧は今後実装します')).toBeVisible()
   await page.getByRole('link', { name: 'Project一覧へ戻る' }).click()
   await expect(page).toHaveURL('/')
   await page.goto(url)

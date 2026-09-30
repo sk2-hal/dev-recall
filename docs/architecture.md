@@ -42,6 +42,7 @@ STEP 6-6では`GET /api/projects/:id`と`/projects/[id]`のProject詳細画面�
 
 - `app/pages/`：画面、入力、表示、API呼び出し。
 - `app/components/`：画面間で共通化するUI。必要になった時点で抽出する。
+- `shared/`：クライアントとサーバーの両方で使う、DBや秘密情報に依存しない定義。
 - `server/api/`：入力検証、HTTP応答、DB操作の呼び出し。
 - `server/db/`：DB接続、Drizzleスキーマ、必要なクエリ。
 - `drizzle/`：レビュー可能なDBマイグレーション。
@@ -122,3 +123,13 @@ DBはUUID主キー、NOT NULL、Project外部キー（ON DELETE RESTRICT）、�
 固定少数のTypeはtext[]により結合や複数INSERTが不要になる。別テーブルはType属性の拡張やマスター管理に適するが、今回その必要はなく採用しない。Tagは未実装の将来設計。環境変数追加はなく、既存DATABASE_URLを使用する。
 
 VitestはAPIのDB関数とDB接続をモックする。Playwrightは既存画面の回帰確認に加え、DB接続を無効化した実Nitroサーバーに不正Entry入力を送り400を確認する。保存成功の実DB検証は開発用Neonでの手動確認とし、自動テストでNeonを使わない。
+
+## STEP 6-8：Entry作成画面
+
+Project詳細の「Entryを追加」から`/projects/:projectId/entries/new`へ移動する。Nuxt UIのUForm、UInput、UTextarea、UCheckboxGroupを使い、Title・Body・Typeを入力する。Typeは5候補を常時表示して複数選択でき、Noteの用途を説明する。固定値とEntryType型は`shared/entry-types.ts`で共有し、画面からサーバー専用モジュールを参照しない。
+
+空白のみのTitle・Body、Type未選択はフロントでも拒否する。保存時は前後空白を除去した`{ title, body, types }`を既存APIへPOSTする。保存中はフォームと戻る操作を無効化し、処理内のガードでも二重送信を防ぐ。自動リトライは行わない。成功後はProject詳細へ戻り、Entry一覧はまだ取得・表示しない。
+
+400は入力確認、それ以外は再試行を促す固定メッセージを表示し、内部エラー詳細を表示しない。失敗時は入力を保持して保存操作を再度有効にする。サーバー検証・DBスキーマ・マイグレーションは変更しない。Tag・Entry一覧・詳細・編集・検索は後続STEPとする。
+
+Vitestで必須検証、送信内容、二重送信防止、成功時の遷移、失敗時の入力保持と再試行を確認する。Playwrightでは実際のNuxt UIで詳細からの作成と201後の復帰、400/500からの再試行の2シナリオを追加する。APIはモックし、既存Projectの回帰テストも維持する。

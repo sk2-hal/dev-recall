@@ -1,7 +1,8 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 import { createEntry, EntryProjectNotFoundError } from '../server/db/entries'
 import { getDb } from '../server/db/index'
-import { entries, type EntryType } from '../server/db/schema'
+import { entries } from '../server/db/schema'
+import type { EntryType } from '../shared/entry-types'
 
 vi.mock('../server/db/index', () => ({ getDb: vi.fn() }))
 const returning = vi.fn()
