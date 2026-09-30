@@ -9,6 +9,7 @@ const project = {
 const url = `/projects/${project.id}`
 
 test.beforeEach(async ({ page }) => {
+  await page.route('**/api/projects/*/entries', route => route.fulfill({ json: [] }))
   await page.route('**/api/projects', route => route.fulfill({ json: [project] }))
   await page.route('**/api/projects/*', route => route.fulfill({ json: project }))
 })
@@ -23,11 +24,12 @@ test('一覧のリンク、詳細表示、一覧への復帰と直接アクセ�
   await expect(page.getByRole('heading', { name: project.name, level: 1 })).toBeVisible()
   await expect(page.locator('time')).toHaveAttribute('datetime', project.createdAt)
   await expect(page.locator('time')).toContainText('2026')
-  await expect(page.getByText('Entry一覧は今後実装します')).toBeVisible()
+  await expect(page.getByText('まだEntryがありません')).toBeVisible()
   await page.getByRole('link', { name: 'Project一覧へ戻る' }).click()
   await expect(page).toHaveURL('/')
   await page.goto(url)
-  await expect(page.getByRole('heading', { name: project.name, level: 1 })).toBeVisible()
+  // 直接アクセスでは再びハイドレーション完了を待つ。
+  await expect(page.getByRole('heading', { name: project.name, level: 1 })).toBeVisible({ timeout: 15000 })
 })
 
 test('読み込み、取得失敗と再試行を表示し内部詳細を隠す', async ({ page }) => {

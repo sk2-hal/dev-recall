@@ -1,7 +1,13 @@
+import { desc, eq } from 'drizzle-orm'
 import { getDb } from './index'
 import { entries } from './schema'
 
 export class EntryProjectNotFoundError extends Error {}
+
+export async function listEntries(projectId: string) {
+  return getDb().select().from(entries).where(eq(entries.projectId, projectId))
+    .orderBy(desc(entries.createdAt), desc(entries.id))
+}
 
 export async function createEntry(input: Pick<typeof entries.$inferInsert, 'projectId' | 'title' | 'body' | 'types'>) {
   try {

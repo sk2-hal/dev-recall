@@ -1,5 +1,6 @@
+import { PgDialect } from 'drizzle-orm/pg-core'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { createEntry, EntryProjectNotFoundError } from '../server/db/entries'
+import { createEntry, listEntries, EntryProjectNotFoundError } from '../server/db/entries'
 import { getDb } from '../server/db/index'
 import { entries } from '../server/db/schema'
 import type { EntryType } from '../shared/entry-types'
@@ -42,4 +43,23 @@ it.each([
 ])('その他のDBエラーを404にしない: %j', async (error) => {
   returning.mockRejectedValue(error)
   await expect(createEntry(input)).rejects.toBe(error)
+})
+
+it('指定Projectだけを作成日時降順・ID降順の1クエリで取得する', async () => {
+  const rows = [{ ...input, id: 'entry-id' }]
+  const orderBy = vi.fn().mockResolvedValue(rows)
+  const where = vi.fn().mockReturnValue({ orderBy })
+  const from = vi.fn().mockReturnValue({ where })
+  const select = vi.fn().mockReturnValue({ from })
+  vi.mocked(getDb).mockReturnValue({ select } as unknown as ReturnType<typeof getDb>)
+  expect(await listEntries(input.projectId)).toEqual(rows)
+  expect(select).toHaveBeenCalledExactlyOnceWith()
+  expect(from).toHaveBeenCalledExactlyOnceWith(entries)
+  const dialect = new PgDialect()
+  expect(dialect.sqlToQuery(where.mock.calls[0]![0])).toMatchObject({
+    sql: '"entries"."project_id" = $1', params: [input.projectId]
+  })
+  expect(orderBy.mock.calls[0]!.map(expression => dialect.sqlToQuery(expression).sql)).toEqual([
+    '"entries"."created_at" desc', '"entries"."id" desc'
+  ])
 })

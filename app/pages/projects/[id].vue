@@ -1,8 +1,17 @@
 <script setup lang="ts">
+import { entryTypeLabels } from '#shared/entry-types'
+
 const route = useRoute()
 const { data: project, status, error, refresh } = useFetch(() => `/api/projects/${encodeURIComponent(String(route.params.id))}`, {
   server: false,
   retry: 0
+})
+
+const { data: entries, status: entriesStatus, error: entriesError, refresh: refreshEntries } = useFetch(() => `/api/projects/${encodeURIComponent(String(route.params.id))}/entries`, {
+  server: false,
+  retry: 0,
+  // 作成画面から戻る場合もキャッシュではなくAPIから最新の一覧を取得する。
+  getCachedData: () => undefined
 })
 
 useSeoMeta({ title: 'Project詳細 | DevRecall' })
@@ -48,12 +57,66 @@ useSeoMeta({ title: 'Project詳細 | DevRecall' })
       <UCard class="mt-8">
         <template #header>
           <h2 class="text-lg font-semibold text-highlighted">
-            Entry
+            Entries
           </h2>
         </template>
-        <p class="text-muted">
-          Entry一覧は今後実装します
+        <p
+          v-if="entriesStatus === 'idle' || entriesStatus === 'pending'"
+          role="status"
+          class="text-sm text-muted"
+        >
+          Entry一覧を読み込み中…
         </p>
+        <div v-else-if="entriesError">
+          <UAlert
+            role="alert"
+            color="error"
+            title="Entry一覧の取得に失敗しました。再試行してください。"
+          />
+          <UButton
+            class="mt-4"
+            label="Entry一覧を再試行"
+            @click="refreshEntries()"
+          />
+        </div>
+        <p
+          v-else-if="!entries?.length"
+          class="text-muted"
+        >
+          まだEntryがありません
+        </p>
+        <ul
+          v-else
+          class="space-y-4"
+        >
+          <li
+            v-for="entry in entries"
+            :key="entry.id"
+          >
+            <UCard>
+              <h3 class="text-lg font-semibold wrap-anywhere">
+                {{ entry.title }}
+              </h3>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <UBadge
+                  v-for="type in entry.types"
+                  :key="type"
+                  color="neutral"
+                  variant="subtle"
+                >
+                  {{ entryTypeLabels[type] }}
+                </UBadge>
+              </div>
+              <p class="mt-2 line-clamp-3 whitespace-pre-wrap text-muted wrap-anywhere">
+                {{ entry.body.length > 200 ? `${entry.body.slice(0, 200)}…` : entry.body }}
+              </p>
+              <p class="mt-2 text-sm text-muted">
+                作成日時：
+                <time :datetime="entry.createdAt">{{ new Date(entry.createdAt).toLocaleString('ja-JP') }}</time>
+              </p>
+            </UCard>
+          </li>
+        </ul>
         <UButton
           :to="`/projects/${project.id}/entries/new`"
           label="Entryを追加"

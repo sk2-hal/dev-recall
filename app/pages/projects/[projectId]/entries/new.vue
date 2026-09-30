@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import type { FormError } from '@nuxt/ui'
-import { entryTypes, type EntryType } from '#shared/entry-types'
+import { entryTypes, entryTypeLabels, type EntryType } from '#shared/entry-types'
 
 const route = useRoute()
 const projectPath = computed(() => `/projects/${encodeURIComponent(String(route.params.projectId))}`)
 const state = reactive({ title: '', body: '', types: [] as EntryType[] })
 const isSaving = ref(false)
 const saveError = ref('')
-const typeLabels: Record<EntryType, string> = {
-  decision: 'Decision', problem: 'Problem', solution: 'Solution', learning: 'Learning', note: 'Note'
-}
-const typeItems = entryTypes.map(value => ({ value, label: typeLabels[value] }))
+const typeItems = entryTypes.map(value => ({ value, label: entryTypeLabels[value] }))
 
 function validateEntry(input: typeof state): FormError[] {
   const errors: FormError[] = []

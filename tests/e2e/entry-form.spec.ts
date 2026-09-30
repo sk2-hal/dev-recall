@@ -17,6 +17,9 @@ test('詳細から作成へ移動し、必須検証・複数Type・二重送信�
     finish = resolve
   })
   await page.route(`**/api/projects/${project.id}/entries`, async (route) => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({ json: posts ? [{ id: 'entry-id', projectId: project.id, title: 'Title', body: 'Body', types: ['decision', 'note'], createdAt: project.createdAt, updatedAt: project.updatedAt }] : [] })
+    }
     posts++
     expect(route.request().method()).toBe('POST')
     expect(route.request().postDataJSON()).toEqual({ title: 'Title', body: 'Body', types: ['decision', 'note'] })
@@ -52,11 +55,15 @@ test('詳細から作成へ移動し、必須検証・複数Type・二重送信�
   finish()
   await expect(page).toHaveURL(projectPath)
   await expect(page.getByRole('heading', { name: project.name })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Title', exact: true })).toBeVisible()
 })
 
 test('400と500で入力を保持し内部詳細を隠して再試行できる', async ({ page }) => {
   let posts = 0
   await page.route(`**/api/projects/${project.id}/entries`, (route) => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({ json: posts ? [{ id: 'entry-id', projectId: project.id, title: 'Title', body: 'Body', types: ['decision', 'note'], createdAt: project.createdAt, updatedAt: project.updatedAt }] : [] })
+    }
     posts++
     return route.fulfill({ status: posts === 1 ? 400 : posts === 2 ? 500 : 201, json: { message: 'INTERNAL_ERROR_MARKER' } })
   })

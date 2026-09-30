@@ -74,7 +74,7 @@ Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任
 | 画面URL | 用途 |
 | --- | --- |
 | `/` | Projects一覧 / 新規 |
-| `/projects/[id]` | Project詳細（実装済み）、Entry一覧 / 検索（今後） |
+| `/projects/[id]` | Project詳細・Entry一覧（実装済み）、検索（今後） |
 | `/projects/[projectId]/entries/new` | Entry作成 |
 | `/projects/[projectId]/entries/[entryId]` | 詳細 / 編集 |
 
@@ -94,7 +94,7 @@ Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任
 
 選択中のProjectに限定して、タイトル・本文・関連Tag名のいずれかにキーワードを含むEntryを返す。初期実装はPostgreSQLの部分一致検索で、前後の空白を除いた入力全体を1つの検索語として扱う。空欄は一覧表示。SQLはパラメーター化し、`%`や`_`は検索文字として扱うようエスケープする。複数Tagに一致してもEntryは重複表示しない。
 
-並び順は初期案としてupdatedAtの降順とする。全文検索エンジン、ベクトル検索、RAGは導入しない。
+並び順はSTEP 6-9で採用したcreatedAt DESC, id DESCを基本とする。全文検索エンジン、ベクトル検索、RAGは導入しない。
 
 ## 公開と秘密情報
 
@@ -133,3 +133,11 @@ Project詳細の「Entryを追加」から`/projects/:projectId/entries/new`へ�
 400は入力確認、それ以外は再試行を促す固定メッセージを表示し、内部エラー詳細を表示しない。失敗時は入力を保持して保存操作を再度有効にする。サーバー検証・DBスキーマ・マイグレーションは変更しない。Tag・Entry一覧・詳細・編集・検索は後続STEPとする。
 
 Vitestで必須検証、送信内容、二重送信防止、成功時の遷移、失敗時の入力保持と再試行を確認する。Playwrightでは実際のNuxt UIで詳細からの作成と201後の復帰、400/500からの再試行の2シナリオを追加する。APIはモックし、既存Projectの回帰テストも維持する。
+
+## STEP 6-9：ProjectごとのEntry一覧
+
+`GET /api/projects/:projectId/entries`はUUIDを検証し、Projectの存在確認後、所属Entryだけを`createdAt DESC, id DESC`の1回のSELECTで返す。Projectなしは404、Entryなしは200と`[]`、DB失敗は内部詳細を含めない固定500。Type配列はEntryと同時に取得し、N+1は発生しない。
+
+Project詳細にタイトル・共有ラベルの複数Type・本文プレビュー（最大200文字、3行）・作成日時を表示する。ProjectとEntry一覧は別々の`useFetch`で状態を保持し、Entryの読み込み・0件・失敗を区別する。再試行はEntry一覧のみ。作成画面から戻った際もキャッシュを使わずAPIから取得する。Typeラベルは`shared/entry-types.ts`を作成画面と共有する。
+
+Vitestで検索条件・順序・API応答とエラーの秘匿、Playwrightで一覧状態・再試行・作成後の最新一覧を検証する。Tag・詳細リンク・編集・削除・検索・ページネーションは含めず、DBスキーマ・migration・環境変数は変更しない。
