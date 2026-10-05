@@ -1,6 +1,6 @@
 import { PgDialect } from 'drizzle-orm/pg-core'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { createEntry, getEntry, listEntries, EntryProjectNotFoundError } from '../server/db/entries'
+import { createEntry, updateEntry, getEntry, listEntries, EntryProjectNotFoundError } from '../server/db/entries'
 import { getDb } from '../server/db/index'
 import { entries } from '../server/db/schema'
 import type { EntryType } from '../shared/entry-types'
@@ -82,4 +82,30 @@ it('指定Projectだけを作成日時降順・ID降順の1クエリで取得す
   expect(orderBy.mock.calls[0]!.map(expression => dialect.sqlToQuery(expression).sql)).toEqual([
     '"entries"."created_at" desc', '"entries"."id" desc'
   ])
+})
+
+it.each([true, false])('更新は所属をAND条件で保証し、更新日時だけを変更する（対象あり: %s）', async (found) => {
+  const now = new Date('2026-10-05T10:00:00Z')
+  vi.useFakeTimers()
+  vi.setSystemTime(now)
+  try {
+    const entryId = '407e8117-278a-4cb8-9bc8-799a22075351'
+    const changes = { title: 'Updated title', body: 'Updated body', types: ['decision', 'note'] as EntryType[] }
+    const row = { ...changes, projectId: input.projectId, id: entryId, createdAt: new Date('2026-10-01T00:00:00Z'), updatedAt: now }
+    const returning = vi.fn().mockResolvedValue(found ? [row] : [])
+    const where = vi.fn().mockReturnValue({ returning })
+    const set = vi.fn().mockReturnValue({ where })
+    const update = vi.fn().mockReturnValue({ set })
+    vi.mocked(getDb).mockReturnValue({ update } as unknown as ReturnType<typeof getDb>)
+    expect(await updateEntry(input.projectId, entryId, changes)).toEqual(found ? row : undefined)
+    expect(update).toHaveBeenCalledExactlyOnceWith(entries)
+    // 完全一致でcreatedAtやprojectIdがSETに含まれないことも保証する。
+    expect(set).toHaveBeenCalledExactlyOnceWith({ ...changes, updatedAt: now })
+    expect(new PgDialect().sqlToQuery(where.mock.calls[0]![0])).toMatchObject({
+      sql: '("entries"."project_id" = $1 and "entries"."id" = $2)', params: [input.projectId, entryId]
+    })
+    expect(returning).toHaveBeenCalledExactlyOnceWith()
+  } finally {
+    vi.useRealTimers()
+  }
 })

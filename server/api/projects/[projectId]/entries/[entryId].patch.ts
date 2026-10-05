@@ -1,6 +1,7 @@
+import { parseEntryInput } from '../../../../utils/entry-input'
 import { isUuid } from '../../../../utils/uuid'
-import { createError, defineEventHandler, getRouterParam } from 'h3'
-import { getEntry } from '../../../../db/entries'
+import { createError, defineEventHandler, getRouterParam, readBody } from 'h3'
+import { updateEntry } from '../../../../db/entries'
 
 export default defineEventHandler(async (event) => {
   const projectId = getRouterParam(event, 'projectId')
@@ -12,14 +13,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Entry IDはUUID形式で指定してください。' })
   }
 
+  const input = parseEntryInput(await readBody(event))
+
   let entry
   try {
-    entry = await getEntry(projectId, entryId)
+    entry = await updateEntry(projectId, entryId, input)
   } catch {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Failed to load Entry',
-      message: 'Entryの取得に失敗しました。'
+      statusMessage: 'Failed to update Entry',
+      message: 'Entryの更新に失敗しました。'
     })
   }
   if (!entry) {

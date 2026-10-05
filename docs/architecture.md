@@ -76,7 +76,8 @@ Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任
 | `/` | Projects一覧 / 新規 |
 | `/projects/[id]` | Project詳細・Entry一覧（実装済み）、検索（今後） |
 | `/projects/[projectId]/entries/new` | Entry作成 |
-| `/projects/[projectId]/entries/[entryId]` | Entry詳細（実装済み）/ 編集（今後） |
+| `/projects/[projectId]/entries/[entryId]` | Entry詳細（実装済み） |
+| `/projects/[projectId]/entries/[entryId]/edit` | Entry編集（実装済み） |
 
 | API | 用途 |
 | --- | --- |
@@ -149,3 +150,13 @@ Vitestで検索条件・順序・API応答とエラーの秘匿、Playwrightで�
 一覧タイトルのNuxtLinkから`/projects/:projectId/entries/:entryId`へ移動する。詳細画面は共有Typeラベル、本文全文、作成・更新日時を表示する。本文はVueのテキスト補間で安全に表示し、`white-space: pre-wrap`で改行・空白を保持する。HTML・Markdownは解釈しない。既存画面と同じ`useFetch`の`server: false, retry: 0`とブラウザの`toLocaleString('ja-JP')`を採用し、SSR・タイムゾーン方針の整理は将来に残す。読み込み、404、その他の取得失敗を区別し、その他の失敗には再試行、全状態にはProject詳細へ戻るリンクを設ける。
 
 VitestでAND検索条件とAPIの入力・応答・エラー秘匿を、Playwrightで一覧からの遷移、全文と改行、安全なテキスト表示、日時、読み込み・失敗・再試行を検証する。DBスキーマ・migration・環境変数・依存は変更しない。
+
+## STEP 6-11：Entry編集
+
+詳細の「編集」リンクから`/projects/:projectId/entries/:entryId/edit`へ移動する。取得成功後だけフォームを表示し、Title・Body・選択済みTypeをコピーして初期化する。読み込み・404・取得失敗を区別し、取得失敗には再試行、対象なしにはProject詳細への導線を用意する。保存中は入力とキャンセルを無効化し、処理内でも二重送信を防ぐ。失敗時は入力を保持して固定メッセージを表示し、再保存できる。キャンセルは保存せず詳細へ戻る。
+
+`PATCH /api/projects/:projectId/entries/:entryId`は作成APIと共通の入力検証でtitle/bodyをtrimし、固定5種類のTypeを1件以上・重複なしで受け付ける。UUID検証も既存APIと小さな関数で共有する。不正入力はDBアクセス前に400。DBはProject IDとEntry IDのAND条件で1回のUPDATEを行い、title/body/typesと現在日時のupdatedAtだけを変更する。createdAtは保持する。RETURNINGの更新後Entryを200で返し、対象なし（別Project所属を含む）は404、DB例外は内部情報を引き継がない500とする。
+
+入力欄はEntryFields、フロント検証はvalidateEntryで作成画面と共有し、保存先・遷移先・取得状態はページごとに扱う。詳細ページを同一URLの`[entryId]/index.vue`へ移し、edit.vueを独立したページにする。保存成功後は詳細へ戻りAPIから最新内容を再取得する。キャッシュ同期は追加しない。
+
+Vitestは時計を固定して更新項目・所属条件・API応答とエラー秘匿を確認する。PlaywrightはAPIをモックして編集・必須検証・保存失敗からの再試行・キャンセル・取得状態と既存画面の回帰を確認する。公開DBには接続しない。DB schema・migration・環境変数・依存パッケージは変更しない。

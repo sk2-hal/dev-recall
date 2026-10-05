@@ -41,6 +41,11 @@ useSeoMeta({ title: 'Entry詳細 | DevRecall' })
       />
     </div>
     <article v-else-if="entry">
+      <UButton
+        :to="`${projectUrl}/entries/${encodeURIComponent(String(route.params.entryId))}/edit`"
+        label="編集"
+        class="mb-4"
+      />
       <h1 class="text-3xl font-bold text-highlighted wrap-anywhere">
         {{ entry.title }}
       </h1>

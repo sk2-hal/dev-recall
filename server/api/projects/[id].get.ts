@@ -1,9 +1,10 @@
+import { isUuid } from '../../utils/uuid'
 import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getProject } from '../../db/projects'
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
-  if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+  if (!isUuid(id)) {
     throw createError({ statusCode: 400, message: 'Project IDはUUID形式で指定してください。' })
   }
 

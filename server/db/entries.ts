@@ -31,3 +31,10 @@ export async function createEntry(input: Pick<typeof entries.$inferInsert, 'proj
     throw error
   }
 }
+
+export async function updateEntry(projectId: string, entryId: string, input: Pick<typeof entries.$inferInsert, 'title' | 'body' | 'types'>) {
+  const [entry] = await getDb().update(entries)
+    .set({ title: input.title, body: input.body, types: input.types, updatedAt: new Date() })
+    .where(and(eq(entries.projectId, projectId), eq(entries.id, entryId))).returning()
+  return entry
+}
