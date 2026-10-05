@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, or, sql } from 'drizzle-orm'
 import { getDb } from './index'
 import { entries } from './schema'
 
@@ -10,8 +10,18 @@ export async function getEntry(projectId: string, entryId: string) {
   return entry
 }
 
-export async function listEntries(projectId: string) {
-  return getDb().select().from(entries).where(eq(entries.projectId, projectId))
+export async function listEntries(projectId: string, query = '') {
+  const keyword = query.trim()
+  // ESCAPEを明示し、!・%・_をリテラルにする。バックスラッシュも通常の文字として扱う。
+  const pattern = `%${keyword.replace(/[!%_]/g, '!$&')}%`
+  const projectCondition = eq(entries.projectId, projectId)
+  const condition = keyword
+    ? and(projectCondition, or(
+        sql`${entries.title} ilike ${pattern} escape '!'`,
+        sql`${entries.body} ilike ${pattern} escape '!'`
+      ))
+    : projectCondition
+  return getDb().select().from(entries).where(condition)
     .orderBy(desc(entries.createdAt), desc(entries.id))
 }
 
@@ -36,5 +46,11 @@ export async function updateEntry(projectId: string, entryId: string, input: Pic
   const [entry] = await getDb().update(entries)
     .set({ title: input.title, body: input.body, types: input.types, updatedAt: new Date() })
     .where(and(eq(entries.projectId, projectId), eq(entries.id, entryId))).returning()
+  return entry
+}
+
+export async function deleteEntry(projectId: string, entryId: string) {
+  const [entry] = await getDb().delete(entries)
+    .where(and(eq(entries.projectId, projectId), eq(entries.id, entryId))).returning({ id: entries.id })
   return entry
 }

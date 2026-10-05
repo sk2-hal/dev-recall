@@ -74,7 +74,7 @@ Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任
 | 画面URL | 用途 |
 | --- | --- |
 | `/` | Projects一覧 / 新規 |
-| `/projects/[id]` | Project詳細・Entry一覧（実装済み）、検索（今後） |
+| `/projects/[id]` | Project詳細・Entry一覧・タイトル/本文検索（実装済み） |
 | `/projects/[projectId]/entries/new` | Entry作成 |
 | `/projects/[projectId]/entries/[entryId]` | Entry詳細（実装済み） |
 | `/projects/[projectId]/entries/[entryId]/edit` | Entry編集（実装済み） |
@@ -160,3 +160,21 @@ VitestでAND検索条件とAPIの入力・応答・エラー秘匿を、Playwrig
 入力欄はEntryFields、フロント検証はvalidateEntryで作成画面と共有し、保存先・遷移先・取得状態はページごとに扱う。詳細ページを同一URLの`[entryId]/index.vue`へ移し、edit.vueを独立したページにする。保存成功後は詳細へ戻りAPIから最新内容を再取得する。キャッシュ同期は追加しない。
 
 Vitestは時計を固定して更新項目・所属条件・API応答とエラー秘匿を確認する。PlaywrightはAPIをモックして編集・必須検証・保存失敗からの再試行・キャンセル・取得状態と既存画面の回帰を確認する。公開DBには接続しない。DB schema・migration・環境変数・依存パッケージは変更しない。
+
+## STEP 6-12：Entry削除
+
+詳細画面の「削除」でブラウザ標準の確認ダイアログを表示する。承認時だけDELETEを送り、処理中は削除・編集・戻る操作を無効化し、処理内でも二重送信を防ぐ。自動リトライは行わない。成功時はProject詳細へ戻り、既存の一覧取得で最新内容を表示する。失敗時は詳細を保持し、固定メッセージから手動で再試行できる。404は対象がないことと一覧へ戻る案内を表示する。
+
+DELETE /api/projects/:projectId/entries/:entryIdは両方のUUIDを検証し、不正ならDBを呼ばず400。Project IDとEntry IDのAND条件で1回のDELETEを行い、RETURNINGで削除を確認して本文なしの204を返す。対象なし・別Project所属は404、DB例外は内部情報を含まない500。物理削除であり復元機能は設けない。スキーマ・migration・依存は変更しない。
+
+Vitestで所属条件とAPI応答・エラー秘匿を、Playwrightでキャンセル・成功後の一覧更新・送信中の操作制限・失敗後の再試行を確認する。自動テストはDB/APIをモックし、Neonには接続しない。
+
+## STEP 6-13：タイトル・本文検索
+
+GET /api/projects/:projectId/entriesの任意のqで、Project内のタイトル・本文を部分一致検索する。qは文字列のみ受け付け、複数指定による配列はDBアクセス前に400。前後の空白を除き、残り全体を1つの検索語として扱う。未指定・空白のみは従来の一覧。Tagは未実装のためTag検索は後続STEPで扱う。
+
+SQLはProject条件 AND（タイトル ILIKE OR 本文 ILIKE）とし、検索値はパラメーター化する。ILIKEで英字の大小を区別しない。ESCAPE '!'を明示し、!・%・_をエスケープするため、これらとバックスラッシュは文字どおり検索できる。createdAt DESC, id DESC、Projectなし404、内部情報を含まない500は従来どおり。
+
+Project詳細には検索入力・検索・クリアを追加する。入力中の文字列と適用済み条件を分け、送信時だけ検索する。useFetchのリアクティブqueryで条件ごとの取得状態を切り替え、古い条件の遅い応答が現在の結果を上書きしないようにする。再試行は入力中の文字列ではなく適用済み条件で行う。クリアは全件一覧へ戻し、空のProjectと検索結果0件は表示を分ける。検索語はVueのテキスト補間で表示する。
+
+Vitestで入力検証・SQL条件・特殊文字・順序・エラー秘匿を、Playwrightで検索とクリア、0件、同条件の再試行、応答順序の逆転を確認する。既存の作成・詳細・編集・削除は維持し、DB schema・migration・環境変数・依存は変更しない。自動テストはDB/APIをモックし、Neonには接続しない。

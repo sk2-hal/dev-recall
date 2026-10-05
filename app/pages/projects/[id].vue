@@ -7,12 +7,30 @@ const { data: project, status, error, refresh } = useFetch(() => `/api/projects/
   retry: 0
 })
 
+const searchInput = ref('')
+const searchKeyword = ref('')
 const { data: entries, status: entriesStatus, error: entriesError, refresh: refreshEntries } = useFetch(() => `/api/projects/${encodeURIComponent(String(route.params.id))}/entries`, {
   server: false,
   retry: 0,
+  query: computed(() => searchKeyword.value ? { q: searchKeyword.value } : {}),
   // 作成画面から戻る場合もキャッシュではなくAPIから最新の一覧を取得する。
   getCachedData: () => undefined
 })
+
+function searchEntries() {
+  const keyword = searchInput.value.trim()
+  if (keyword === searchKeyword.value) {
+    refreshEntries()
+  } else {
+    // useFetchが条件の変更を監視する。入力中には取得しない。
+    searchKeyword.value = keyword
+  }
+}
+
+function clearSearch() {
+  searchInput.value = ''
+  searchEntries()
+}
 
 useSeoMeta({ title: 'Project詳細 | DevRecall' })
 </script>
@@ -60,6 +78,40 @@ useSeoMeta({ title: 'Project詳細 | DevRecall' })
             Entries
           </h2>
         </template>
+        <form
+          class="mb-4 space-y-2"
+          @submit.prevent="searchEntries"
+        >
+          <UFormField
+            label="Entry検索"
+            name="search"
+          >
+            <UInput
+              v-model="searchInput"
+              placeholder="タイトル・本文のキーワード"
+              class="w-full"
+            />
+          </UFormField>
+          <div class="flex gap-2">
+            <UButton
+              type="submit"
+              label="検索"
+            />
+            <UButton
+              type="button"
+              label="クリア"
+              color="neutral"
+              variant="outline"
+              @click="clearSearch"
+            />
+          </div>
+        </form>
+        <p
+          v-if="searchKeyword"
+          class="mb-4 text-sm text-muted wrap-anywhere"
+        >
+          検索条件：{{ searchKeyword }}
+        </p>
         <p
           v-if="entriesStatus === 'idle' || entriesStatus === 'pending'"
           role="status"
@@ -83,7 +135,7 @@ useSeoMeta({ title: 'Project詳細 | DevRecall' })
           v-else-if="!entries?.length"
           class="text-muted"
         >
-          まだEntryがありません
+          {{ searchKeyword ? '検索条件に一致するEntryがありません。' : 'まだEntryがありません' }}
         </p>
         <ul
           v-else

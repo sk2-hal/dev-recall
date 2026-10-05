@@ -8,6 +8,30 @@ const { data: entry, status, error, refresh } = useFetch(() => `/api/projects/${
   retry: 0
 })
 
+const isDeleting = ref(false)
+const deleteError = ref('')
+
+async function removeEntry() {
+  if (isDeleting.value || !entry.value) return
+  if (!window.confirm('このEntryを削除しますか？この操作は取り消せません。')) return
+  isDeleting.value = true
+  deleteError.value = ''
+  try {
+    await $fetch(`/api/projects/${encodeURIComponent(String(route.params.projectId))}/entries/${encodeURIComponent(String(route.params.entryId))}`, {
+      method: 'DELETE',
+      retry: 0
+    })
+  } catch (error) {
+    const statusCode = (error as { statusCode?: number }).statusCode
+    deleteError.value = statusCode === 404
+      ? 'Entryが見つかりません。すでに削除された可能性があります。Project詳細へ戻って確認してください。'
+      : 'Entryの削除に失敗しました。再試行してください。'
+    isDeleting.value = false
+    return
+  }
+  await navigateTo(projectUrl.value)
+}
+
 useSeoMeta({ title: 'Entry詳細 | DevRecall' })
 </script>
 
@@ -16,6 +40,7 @@ useSeoMeta({ title: 'Entry詳細 | DevRecall' })
     <UButton
       :to="projectUrl"
       label="Project詳細へ戻る"
+      :disabled="isDeleting"
       color="neutral"
       variant="outline"
       class="mb-8"
@@ -44,6 +69,23 @@ useSeoMeta({ title: 'Entry詳細 | DevRecall' })
       <UButton
         :to="`${projectUrl}/entries/${encodeURIComponent(String(route.params.entryId))}/edit`"
         label="編集"
+        :disabled="isDeleting"
+        class="mb-4"
+      />
+      <UButton
+        label="削除"
+        color="error"
+        variant="outline"
+        class="mb-4 ml-2"
+        :loading="isDeleting"
+        :disabled="isDeleting"
+        @click="removeEntry"
+      />
+      <UAlert
+        v-if="deleteError"
+        role="alert"
+        color="error"
+        :title="deleteError"
         class="mb-4"
       />
       <h1 class="text-3xl font-bold text-highlighted wrap-anywhere">
