@@ -1,8 +1,14 @@
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { getDb } from './index'
 import { entries } from './schema'
 
 export class EntryProjectNotFoundError extends Error {}
+
+export async function getEntry(projectId: string, entryId: string) {
+  const [entry] = await getDb().select().from(entries)
+    .where(and(eq(entries.projectId, projectId), eq(entries.id, entryId))).limit(1)
+  return entry
+}
 
 export async function listEntries(projectId: string) {
   return getDb().select().from(entries).where(eq(entries.projectId, projectId))

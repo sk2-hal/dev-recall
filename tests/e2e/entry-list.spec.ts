@@ -24,7 +24,7 @@ test('一覧のタイトル・複数Type・本文プレビュー・日時と追�
   await expect(item.getByText(entry.body.slice(0, 200) + '…', { exact: true })).toBeVisible()
   await expect(item.locator('script')).toHaveCount(0)
   await expect(item.locator('time')).toHaveAttribute('datetime', entry.createdAt)
-  await expect(item.getByRole('link')).toHaveCount(0)
+  await expect(item.getByRole('link', { name: entry.title })).toHaveAttribute('href', `${url}/entries/${entry.id}`)
   await page.getByRole('link', { name: 'Entryを追加' }).click()
   await expect(page).toHaveURL(`${url}/entries/new`)
 })

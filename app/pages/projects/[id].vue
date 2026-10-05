@@ -95,7 +95,12 @@ useSeoMeta({ title: 'Project詳細 | DevRecall' })
           >
             <UCard>
               <h3 class="text-lg font-semibold wrap-anywhere">
-                {{ entry.title }}
+                <NuxtLink
+                  :to="`/projects/${entry.projectId}/entries/${entry.id}`"
+                  class="text-primary hover:underline"
+                >
+                  {{ entry.title }}
+                </NuxtLink>
               </h3>
               <div class="mt-2 flex flex-wrap gap-2">
                 <UBadge

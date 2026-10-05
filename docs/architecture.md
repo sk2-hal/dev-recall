@@ -76,7 +76,7 @@ Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任
 | `/` | Projects一覧 / 新規 |
 | `/projects/[id]` | Project詳細・Entry一覧（実装済み）、検索（今後） |
 | `/projects/[projectId]/entries/new` | Entry作成 |
-| `/projects/[projectId]/entries/[entryId]` | 詳細 / 編集 |
+| `/projects/[projectId]/entries/[entryId]` | Entry詳細（実装済み）/ 編集（今後） |
 
 | API | 用途 |
 | --- | --- |
@@ -85,7 +85,7 @@ Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任
 | `GET /api/projects/:id` | Project詳細 |
 | `GET /api/projects/:projectId/entries?q=...` | 所属Entry一覧 / 検索 |
 | `POST /api/projects/:projectId/entries` | Entry作成 |
-| `GET /api/projects/:projectId/entries/:entryId` | Entry詳細 |
+| `GET /api/projects/:projectId/entries/:entryId` | Entry詳細（実装済み） |
 | `PATCH /api/projects/:projectId/entries/:entryId` | Entry編集 |
 
 サーバーで必須項目、Typeの存在、ProjectとEntryの所属関係を検証する。入力不正は400、対象なしは404とし、内部エラーやDB接続情報をそのまま返さない。TagはEntryの保存時に名前から登録・再利用する。
@@ -141,3 +141,11 @@ Vitestで必須検証、送信内容、二重送信防止、成功時の遷移�
 Project詳細にタイトル・共有ラベルの複数Type・本文プレビュー（最大200文字、3行）・作成日時を表示する。ProjectとEntry一覧は別々の`useFetch`で状態を保持し、Entryの読み込み・0件・失敗を区別する。再試行はEntry一覧のみ。作成画面から戻った際もキャッシュを使わずAPIから取得する。Typeラベルは`shared/entry-types.ts`を作成画面と共有する。
 
 Vitestで検索条件・順序・API応答とエラーの秘匿、Playwrightで一覧状態・再試行・作成後の最新一覧を検証する。Tag・詳細リンク・編集・削除・検索・ページネーションは含めず、DBスキーマ・migration・環境変数は変更しない。
+
+## STEP 6-10：Entry詳細
+
+`GET /api/projects/:projectId/entries/:entryId`は両方のUUIDを検証し、不正ならDBにアクセスせず400を返す。`getEntry`は`projectId = 指定Project AND id = 指定Entry`をDB検索条件にして1件取得し、所属関係を保証する。Projectの存在確認は別途行わず、Projectなし・Entryなし・別Project所属を同じ404とする。成功時は`{ id, projectId, title, body, types, createdAt, updatedAt }`、DBエラーは内部情報を含まない固定500を返す。
+
+一覧タイトルのNuxtLinkから`/projects/:projectId/entries/:entryId`へ移動する。詳細画面は共有Typeラベル、本文全文、作成・更新日時を表示する。本文はVueのテキスト補間で安全に表示し、`white-space: pre-wrap`で改行・空白を保持する。HTML・Markdownは解釈しない。既存画面と同じ`useFetch`の`server: false, retry: 0`とブラウザの`toLocaleString('ja-JP')`を採用し、SSR・タイムゾーン方針の整理は将来に残す。読み込み、404、その他の取得失敗を区別し、その他の失敗には再試行、全状態にはProject詳細へ戻るリンクを設ける。
+
+VitestでAND検索条件とAPIの入力・応答・エラー秘匿を、Playwrightで一覧からの遷移、全文と改行、安全なテキスト表示、日時、読み込み・失敗・再試行を検証する。DBスキーマ・migration・環境変数・依存は変更しない。

@@ -1,11 +1,31 @@
 import { PgDialect } from 'drizzle-orm/pg-core'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { createEntry, listEntries, EntryProjectNotFoundError } from '../server/db/entries'
+import { createEntry, getEntry, listEntries, EntryProjectNotFoundError } from '../server/db/entries'
 import { getDb } from '../server/db/index'
 import { entries } from '../server/db/schema'
 import type { EntryType } from '../shared/entry-types'
 
 vi.mock('../server/db/index', () => ({ getDb: vi.fn() }))
+
+it.each([true, false])('詳細はProjectとEntryのAND条件で1件取得する（対象あり: %s）', async (found) => {
+  const entryId = '407e8117-278a-4cb8-9bc8-799a22075351'
+  const row = { ...input, id: entryId }
+  const limit = vi.fn().mockResolvedValue(found ? [row] : [])
+  const where = vi.fn().mockReturnValue({ limit })
+  const from = vi.fn(() => ({ where }))
+  const select = vi.fn(() => ({ from }))
+  vi.mocked(getDb).mockReturnValue({ select } as unknown as ReturnType<typeof getDb>)
+  expect(await getEntry(input.projectId, entryId)).toEqual(found ? row : undefined)
+  expect(select).toHaveBeenCalledExactlyOnceWith()
+  expect(from).toHaveBeenCalledExactlyOnceWith(entries)
+  expect(where).toHaveBeenCalledTimes(1)
+  // ORやEntry IDだけの検索では別ProjectのEntryが混入するため、実際のSQLと引数を検証する。
+  expect(new PgDialect().sqlToQuery(where.mock.calls[0]![0])).toMatchObject({
+    sql: '("entries"."project_id" = $1 and "entries"."id" = $2)',
+    params: [input.projectId, entryId]
+  })
+  expect(limit).toHaveBeenCalledExactlyOnceWith(1)
+})
 const returning = vi.fn()
 const values = vi.fn(() => ({ returning }))
 const insert = vi.fn(() => ({ values }))
