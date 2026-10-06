@@ -6,16 +6,18 @@ const entry = { id: '407e8117-278a-4cb8-9bc8-799a22075351', projectId: project.i
 const bodyEntry = { ...entry, id: '407e8117-278a-4cb8-9bc8-799a22075352', title: '本文一致', body: 'Nuxt UIを使う' }
 const unrelated = { ...entry, id: '407e8117-278a-4cb8-9bc8-799a22075353', title: '検索対象外' }
 
+const tagEntry = { ...entry, id: '407e8117-278a-4cb8-9bc8-799a22075354', title: 'Tagだけで一致', tags: ['Nuxt UI', 'Nuxt UI Tips'] }
+
 test.beforeEach(async ({ page }) => {
   await page.route(`**/api${projectPath}`, route => route.fulfill({ json: project }))
 })
 
-test('送信時だけ検索し、タイトル・本文の結果と導線を表示してクリアで一覧へ戻る', async ({ page }) => {
+test('送信時だけ検索し、タイトル・本文・Tagの結果と導線を表示してクリアで一覧へ戻る', async ({ page }) => {
   const queries: (string | null)[] = []
   await page.route(`**/api${projectPath}/entries*`, (route) => {
     const q = new URL(route.request().url()).searchParams.get('q')
     queries.push(q)
-    return route.fulfill({ json: q ? [entry, bodyEntry] : [entry, bodyEntry, unrelated] })
+    return route.fulfill({ json: q ? [entry, bodyEntry, tagEntry] : [entry, bodyEntry, tagEntry, unrelated] })
   })
   await page.goto(projectPath)
   await expect(page.getByRole('heading', { name: project.name })).toBeVisible({ timeout: 15000 })
@@ -25,10 +27,12 @@ test('送信時だけ検索し、タイトル・本文の結果と導線を表�
   await page.getByRole('button', { name: '検索', exact: true }).click()
   await expect(page.getByText('検索条件：Nuxt UI', { exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: unrelated.title })).toHaveCount(0)
-  for (const item of [entry, bodyEntry]) {
+  for (const item of [entry, bodyEntry, tagEntry]) {
     await expect(page.getByRole('link', { name: item.title })).toHaveAttribute('href', `${projectPath}/entries/${item.id}`)
   }
   await expect(page.getByRole('link', { name: 'Entryを追加' })).toHaveAttribute('href', `${projectPath}/entries/new`)
+  await expect(page.getByRole('link', { name: tagEntry.title })).toHaveCount(1)
+  await expect(page.getByLabel('Tag一覧')).toContainText('Nuxt UI Tips')
   expect(queries).toEqual([null, 'Nuxt UI'])
   await page.getByRole('button', { name: 'クリア' }).click()
   await expect(page.getByRole('heading', { name: unrelated.title })).toBeVisible()

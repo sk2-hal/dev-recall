@@ -88,7 +88,7 @@ useSeoMeta({ title: 'Project詳細 | DevRecall' })
           >
             <UInput
               v-model="searchInput"
-              placeholder="タイトル・本文のキーワード"
+              placeholder="タイトル・本文・Tagのキーワード"
               class="w-full"
             />
           </UFormField>

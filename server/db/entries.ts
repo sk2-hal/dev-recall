@@ -33,7 +33,10 @@ export async function listEntries(projectId: string, query = '') {
   const condition = keyword
     ? and(projectCondition, or(
         sql`${entries.title} ilike ${pattern} escape '!'`,
-        sql`${entries.body} ilike ${pattern} escape '!'`
+        sql`${entries.body} ilike ${pattern} escape '!'`,
+        sql`exists (select 1 from ${entryTags} et inner join ${tags} t on et.tag_id = t.id
+          where et.entry_id = ${entries}.${sql.identifier(entries.id.name)}
+            and t.name ilike ${pattern} escape '!')`
       ))
     : projectCondition
   return getDb().select(entrySelection).from(entries).where(condition)

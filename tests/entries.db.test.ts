@@ -59,8 +59,8 @@ it.each([
   const [text, params] = query.mock.calls[0]!
   expect(compact(text)).toContain(pattern === null
     ? 'where "entries"."project_id" = $1 order by'
-    : 'where ("entries"."project_id" = $1 and ("entries"."title" ilike $2 escape \'!\' or "entries"."body" ilike $3 escape \'!\')) order by')
-  expect(params).toEqual(pattern === null ? [projectId] : [projectId, pattern, pattern])
+    : 'where ("entries"."project_id" = $1 and ("entries"."title" ilike $2 escape \'!\' or "entries"."body" ilike $3 escape \'!\' or exists (select 1 from "entry_tags" et inner join "tags" t on et.tag_id = t.id where et.entry_id = "entries"."id" and t.name ilike $4 escape \'!\'))) order by')
+  expect(params).toEqual(pattern === null ? [projectId] : [projectId, pattern, pattern, pattern])
   expect(compact(text)).toContain('order by "entries"."created_at" desc, "entries"."id" desc')
   expect(compact(text)).toContain('array_agg(')
   // 外側はentriesのみなので、複数TagがあってもEntryを増幅させない。
