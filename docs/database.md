@@ -120,3 +120,28 @@ WHERE id = '<返ったEntry UUID>'::uuid;
 再実行すると別のProject / Entryが追加される。Entry取得API・画面は今回未実装のためSQLで永続化を確認する。DB障害時の情報非公開・削除競合は自動テストで検証し、実DBを故意に破壊して確認しない。
 
 Typeはdecision / problem / solution / learning / noteの5種類、1〜5件・重複なし。noteは他の4種類に分類しにくい汎用メモ用。note単独および5種類すべての指定でも201と保存結果を確認する。
+
+## STEP 6-14：Tagマイグレーション（未適用）
+
+**実装・自動テスト時点で0002は実Neonへ未適用。実NeonへのDB操作も行っていない。** 新しいAPIはTagのSELECTを行うため、DB接続環境ではAPI更新前にこのmigrationが必要になる。スキーマ追加後も従来のEntryデータを変更せず、旧APIはそのまま利用できる。
+
+1. drizzle/0002_dizzy_pet_avengers.sqlとmeta/0002_snapshot.jsonをレビューする。tagsとentry_tagsの新規作成、Tag名の一意制約、関連の複合主キーと外部キーのみ。既存テーブルのDROP・データUPDATE・既存migrationの変更はない。
+2. 利用者がNeonの開発用Project / branch / databaseとローカル設定の一致を確認する。接続文字列は表示・共有しない。
+3. 利用者の明示的な適用確認後にpnpm db:migrateを実行する。今回はこのコマンドを実行していない。
+4. 適用後に公開可能なサンプルデータで以下を手動確認する（今回未実施）。
+
+| 操作 | 確認する結果 |
+| --- | --- |
+| 既存Entryの詳細・一覧GET | tags: []、既存項目は維持 |
+| POSTでtags: [" Nuxt ", "", "Nuxt", "nuxt"] | 201、tags: ["Nuxt", "nuxt"] |
+| 別Entryに同名TagをPOST | tagsの同じ行を再利用、関連だけ増える |
+| PATCHでtags省略 | 既存Tagを維持 |
+| PATCHでtags: [] | 対象Entryの関連だけ解除、共有Tagは残る |
+| 別ProjectのEntryへPATCH | 404、Entry・Tag・関連に変更なし |
+| EntryをDELETE | 204、そのEntryの関連だけCASCADE削除、他Entryと共有Tagは維持 |
+
+並行して同名Tagを保存するケース、同じEntryのTagを置換するケース、途中失敗時のrollbackは、隔離された検証DBで確認する項目として残る。本STEPの自動テストはSQLと実行境界の検証であり、実DBでこれらを再現したものではない。失敗を作るために公開DBを操作しない。
+
+接続は既存Neon HTTPのまま。batch内の各SQLはREAD COMMITTEDで実行し、Entry更新による行ロック、Tag名の一意制約とON CONFLICT DO NOTHING、その後の別SQLによるTag取得を組み合わせる。詳細はarchitecture.mdのSTEP 6-14を参照。
+
+検証コマンド：pnpm lint、pnpm typecheck、pnpm test、pnpm test:e2e --workers=2、pnpm build、git diff --check。Playwrightは専用サーバーでDATABASE_URLを空にし、通常の.envを読まずAPIをモックする。

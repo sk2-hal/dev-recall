@@ -8,7 +8,7 @@ vi.mock('../server/db/entries', () => ({ updateEntry: vi.fn() }))
 const id = 'b7427f31-2432-4aa8-a766-5ecbb333ff7b'
 const date = new Date('2026-09-27T00:00:00.000Z')
 const valid = { title: 'Title', body: 'Body', types: ['decision', 'learning'] }
-const entry = { ...valid, types: ['decision', 'learning'] as ('decision' | 'learning')[], id: 'a7427f31-2432-4aa8-a766-5ecbb333ff7b', projectId: id, createdAt: date, updatedAt: date }
+const entry = { ...valid, tags: [] as string[], types: ['decision', 'learning'] as ('decision' | 'learning')[], id: 'a7427f31-2432-4aa8-a766-5ecbb333ff7b', projectId: id, createdAt: date, updatedAt: date }
 const app = createApp().use(createRouter().patch('/api/projects/:projectId/entries/:entryId', handler))
 const request = toWebHandler(app)
 const patch = (body: unknown = valid, projectId = id, entryId = entry.id) => request(new Request(`http://localhost/api/projects/${encodeURIComponent(projectId)}/entries/${encodeURIComponent(entryId)}`, {
@@ -70,4 +70,30 @@ it('DB詳細を漏らさず500', async () => {
   for (const secret of ['INTERNAL_SQL_CONNECTION_MARKER', 'postgres://', 'secret', 'UPDATE', 'cause']) {
     expect(JSON.stringify(body)).not.toContain(secret)
   }
+})
+
+it.each([
+  { tags: [' Nuxt ', '', '　', 'Nuxt', 'nuxt'], expected: ['Nuxt', 'nuxt'] },
+  { tags: [], expected: [] },
+  { tags: [' '], expected: [] }
+])('明示的なtagsは正規化して置換要求として渡す: $tags', async ({ tags, expected }) => {
+  vi.mocked(updateEntry).mockResolvedValue({ ...entry, tags: expected })
+  const response = await patch({ ...valid, tags })
+  expect(response.status).toBe(200)
+  expect(await response.json()).toMatchObject({ tags: expected })
+  expect(updateEntry).toHaveBeenCalledExactlyOnceWith(id, entry.id, { ...valid, tags: expected })
+})
+
+it('PATCHのtags省略は既存Tagを維持するためtagsプロパティをDBへ渡さない', async () => {
+  vi.mocked(updateEntry).mockResolvedValue({ ...entry, tags: ['existing'] })
+  const response = await patch()
+  expect(response.status).toBe(200)
+  expect(await response.json()).toMatchObject({ tags: ['existing'] })
+  expect(updateEntry).toHaveBeenCalledExactlyOnceWith(id, entry.id, valid)
+  expect(vi.mocked(updateEntry).mock.calls[0]![2]).not.toHaveProperty('tags')
+})
+
+it.each([{ tags: null }, { tags: 'Nuxt' }, { tags: {} }, { tags: 1 }, { tags: ['Nuxt', null] }, { tags: [false] }, { tags: [{}] }])('Tagの型不正はDBを呼ばず400: $tags', async ({ tags }) => {
+  expect((await patch({ ...valid, tags })).status).toBe(400)
+  expect(updateEntry).not.toHaveBeenCalled()
 })

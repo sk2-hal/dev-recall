@@ -10,12 +10,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Project IDはUUID形式で指定してください。' })
   }
   const input: unknown = await readBody(event)
-  const { title, body, types } = parseEntryInput(input)
+  const { title, body, types, tags = [] } = parseEntryInput(input)
 
   let entry
   try {
     const project = await getProject(projectId)
-    if (project) entry = await createEntry({ projectId: project.id, title: title.trim(), body: body.trim(), types })
+    if (project) entry = await createEntry({ projectId: project.id, title, body, types, tags })
   } catch (error) {
     if (!(error instanceof EntryProjectNotFoundError)) {
       throw createError({ statusCode: 500, statusMessage: 'Failed to save Entry', message: 'Entryの保存に失敗しました。' })

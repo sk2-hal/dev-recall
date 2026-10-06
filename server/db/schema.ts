@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { check, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { check, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import type { EntryType } from '../../shared/entry-types'
 
 export const projects = pgTable('projects', {
@@ -30,3 +30,13 @@ export const entries = pgTable('entries', {
     AND cardinality(array_positions(${table.types}, 'learning')) <= 1
     AND cardinality(array_positions(${table.types}, 'note')) <= 1`)
 ])
+
+export const tags = pgTable('tags', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull().unique()
+})
+
+export const entryTags = pgTable('entry_tags', {
+  entryId: uuid('entry_id').notNull().references(() => entries.id, { onDelete: 'cascade' }),
+  tagId: uuid('tag_id').notNull().references(() => tags.id, { onDelete: 'restrict' })
+}, table => [primaryKey({ columns: [table.entryId, table.tagId] })])

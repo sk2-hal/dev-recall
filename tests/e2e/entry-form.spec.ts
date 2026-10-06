@@ -24,7 +24,7 @@ test('詳細から作成へ移動し、必須検証・複数Type・二重送信�
     expect(route.request().method()).toBe('POST')
     expect(route.request().postDataJSON()).toEqual({ title: 'Title', body: 'Body', types: ['decision', 'note'] })
     await pending
-    await route.fulfill({ status: 201, json: { id: 'entry-id' } })
+    await route.fulfill({ status: 201, json: { id: 'entry-id', tags: [] } })
   })
   await page.goto(projectPath)
   await page.getByRole('link', { name: 'Entryを追加' }).click()

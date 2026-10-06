@@ -13,7 +13,7 @@ const entryId = '407e8117-278a-4cb8-9bc8-799a22075351'
 const get = (project = projectId, entry = entryId) => handleRequest(new Request(`http://localhost/api/projects/${encodeURIComponent(project)}/entries/${encodeURIComponent(entry)}`))
 
 it.each([false, true])('正常取得は全項目とISO日時を200で返す（大文字: %s）', async (uppercase) => {
-  const row = { id: entryId, projectId, title: 'Title', body: 'Body\n全文', types: ['decision', 'note'] as ('decision' | 'note')[], createdAt: new Date('2026-10-01T00:00:00Z'), updatedAt: new Date('2026-10-02T00:00:00Z') }
+  const row = { tags: uppercase ? ['Nuxt', 'nuxt'] : [], id: entryId, projectId, title: 'Title', body: 'Body\n全文', types: ['decision', 'note'] as ('decision' | 'note')[], createdAt: new Date('2026-10-01T00:00:00Z'), updatedAt: new Date('2026-10-02T00:00:00Z') }
   vi.mocked(getEntry).mockResolvedValue(row)
   const project = uppercase ? projectId.toUpperCase() : projectId
   const entry = uppercase ? entryId.toUpperCase() : entryId

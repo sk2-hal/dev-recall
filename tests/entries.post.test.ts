@@ -10,7 +10,7 @@ vi.mock('../server/db/entries', () => ({ createEntry: vi.fn(), EntryProjectNotFo
 const id = 'b7427f31-2432-4aa8-a766-5ecbb333ff7b'
 const date = new Date('2026-09-27T00:00:00.000Z')
 const valid = { title: 'Title', body: 'Body', types: ['decision', 'learning'] }
-const entry = { ...valid, types: ['decision', 'learning'] as ('decision' | 'learning')[], id: 'a7427f31-2432-4aa8-a766-5ecbb333ff7b', projectId: id, createdAt: date, updatedAt: date }
+const entry = { ...valid, tags: [] as string[], types: ['decision', 'learning'] as ('decision' | 'learning')[], id: 'a7427f31-2432-4aa8-a766-5ecbb333ff7b', projectId: id, createdAt: date, updatedAt: date }
 const app = createApp().use(createRouter().post('/api/projects/:projectId/entries', handler))
 const request = toWebHandler(app)
 const post = (body: unknown = valid, projectId = id) => request(new Request(`http://localhost/api/projects/${encodeURIComponent(projectId)}/entries`, {
@@ -26,7 +26,7 @@ it.each([id, id.toUpperCase()])('201と保存結果・ISO日時を返し空白�
   expect(response.status).toBe(201)
   expect(await response.json()).toEqual(JSON.parse(JSON.stringify(entry)))
   expect(getProject).toHaveBeenCalledExactlyOnceWith(projectId)
-  expect(createEntry).toHaveBeenCalledExactlyOnceWith({ ...valid, projectId: id })
+  expect(createEntry).toHaveBeenCalledExactlyOnceWith({ ...valid, projectId: id, tags: [] })
 })
 it.each(['title', 'body'])('%sの不正値を400にする', async (field) => {
   for (const value of ['', ' \t\n　', null, 123, [], {}, undefined]) {
@@ -44,7 +44,7 @@ it.each<{ types: EntryType[] }>([
   const response = await post({ ...valid, types })
   expect(response.status).toBe(201)
   expect(await response.json()).toEqual(JSON.parse(JSON.stringify(saved)))
-  expect(createEntry).toHaveBeenCalledExactlyOnceWith({ ...valid, types, projectId: id })
+  expect(createEntry).toHaveBeenCalledExactlyOnceWith({ ...valid, types, projectId: id, tags: [] })
 })
 it.each([[], ['decision', 'decision'], ['note', 'note'], ['unknown'], ['note', 'unknown'], ['Decision'], [null], 'decision', null, undefined])('不正なType %jは400', async (types) => {
   expect((await post({ ...valid, types })).status).toBe(400)
@@ -78,4 +78,23 @@ it.each(['lookup', 'insert'])('%sのDB詳細を漏らさず固定500', async (st
   expect(response.status).toBe(500)
   expect(body).toMatchObject({ statusMessage: 'Failed to save Entry' })
   expect(JSON.stringify(body)).not.toContain(error.message)
+})
+
+it.each([
+  { tags: [' Nuxt ', '', '　', 'Nuxt', 'nuxt', ' C# '], expected: ['Nuxt', 'nuxt', 'C#'] },
+  { tags: [], expected: [] },
+  { tags: [' ', '\n'], expected: [] }
+])('Tagを正規化し保存、応答のtagsを返す: $tags', async ({ tags, expected }) => {
+  const saved = { ...entry, tags: [...expected].sort() }
+  vi.mocked(createEntry).mockResolvedValue(saved)
+  const response = await post({ ...valid, tags })
+  expect(response.status).toBe(201)
+  expect(await response.json()).toMatchObject({ tags: saved.tags })
+  expect(createEntry).toHaveBeenCalledExactlyOnceWith({ ...valid, projectId: id, tags: expected })
+})
+
+it.each([{ tags: null }, { tags: 'Nuxt' }, { tags: {} }, { tags: 1 }, { tags: ['Nuxt', null] }, { tags: [1] }, { tags: [[]] }])('Tagの型不正はDBを呼ばず400: $tags', async ({ tags }) => {
+  expect((await post({ ...valid, tags })).status).toBe(400)
+  expect(getProject).not.toHaveBeenCalled()
+  expect(createEntry).not.toHaveBeenCalled()
 })

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 const entry = {
   id: '407e8117-278a-4cb8-9bc8-799a22075351', projectId: 'b7427f31-2432-4aa8-a766-5ecbb333ff7b',
-  title: '元のTitle', body: '元のBody\n2行目', types: ['decision', 'learning'],
+  tags: ['既存Tag'], title: '元のTitle', body: '元のBody\n2行目', types: ['decision', 'learning'],
   createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z'
 }
 const projectPath = `/projects/${entry.projectId}`

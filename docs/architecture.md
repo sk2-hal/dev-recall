@@ -60,14 +60,14 @@ C#/.NETで考えると、Nitro APIはWeb APIのエンドポイント、Drizzle�
 | entry_tags | entryId, tagId |
 
 - Project 1:N Entry。`entries.projectId`で所属先を持つ。
-- EntryのTypeはtext[]で保持する。Entry N:N Tagは将来の中間テーブルで表現する。
+- EntryのTypeはtext[]で保持する。Entry N:N Tagは`entry_tags`中間テーブルで表現する（STEP 6-14）。
 - Typeはdecision / problem / solution / learning / noteの固定5種類。1件以上・重複なしで、利用者によるType追加・編集は設けない。noteは他の4種類に分類しにくい汎用メモ用とする。
 - Tagは自由入力。初期実装では全Project共通のTagマスターとし、Entryへの関連で利用する。
 - ProblemとSolutionは別Entry。Entry間のリンク用カラム・テーブルはMVPには追加しない。
 
 初期実装方針：各マスターとEntryのIDはUUID、日時はタイムゾーン付きで保存する。外部キーで関連を保証し、中間テーブルは2つのIDを複合主キーとして重複登録を防ぐ。Tag名は一意にする。Tagの前後の空白は除去し、空文字は登録せず、同名Tagは再利用する。大文字・小文字の異なるTagは初期実装では別名として扱う。
 
-Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任意とする。これらは未指定の細部を補う初期実装方針で、変更する場合は要件との整合を確認する。EntryとTypeは1回のINSERTで保存する。将来のTag関連追加時にはトランザクションでまとめて保存し、途中失敗による不整合を防ぐ。編集時にはupdatedAtも更新する。
+Project名、Entryタイトル・本文は必須、Typeは1件以上、Tagは任意とする。これらは未指定の細部を補う初期実装方針で、変更する場合は要件との整合を確認する。EntryとTypeは1回のINSERTで保存する。STEP 6-14ではTagと関連を含めてNeon HTTPのbatchトランザクションで保存する。編集時にはupdatedAtも更新する。
 
 ## 画面とAPIの初期案
 
@@ -178,3 +178,31 @@ SQLはProject条件 AND（タイトル ILIKE OR 本文 ILIKE）とし、検索�
 Project詳細には検索入力・検索・クリアを追加する。入力中の文字列と適用済み条件を分け、送信時だけ検索する。useFetchのリアクティブqueryで条件ごとの取得状態を切り替え、古い条件の遅い応答が現在の結果を上書きしないようにする。再試行は入力中の文字列ではなく適用済み条件で行う。クリアは全件一覧へ戻し、空のProjectと検索結果0件は表示を分ける。検索語はVueのテキスト補間で表示する。
 
 Vitestで入力検証・SQL条件・特殊文字・順序・エラー秘匿を、Playwrightで検索とクリア、0件、同条件の再試行、応答順序の逆転を確認する。既存の作成・詳細・編集・削除は維持し、DB schema・migration・環境変数・依存は変更しない。自動テストはDB/APIをモックし、Neonには接続しない。
+
+## STEP 6-14：TagのDB・API対応
+
+TagのDBとAPIのみを追加する。Tag入力・表示UIとTagキーワード検索は後続STEPとし、現在の検索対象は引き続きタイトル・本文のみ。tagsは全Project共通で、UUID主キーとnameのNOT NULL / UNIQUEを持つ。entry_tagsは(entry_id, tag_id)の複合主キー。Entryへの外部キーはON DELETE CASCADEで関連だけを削除し、Tagへの外部キーはRESTRICT。使われなくなったTagの自動清掃は行わない。
+
+POST /api/projects/:projectId/entriesとPATCH /api/projects/:projectId/entries/:entryIdは任意のtags: string[]を受け取る。配列以外・非文字列要素はDBアクセス前に400。各要素をJavaScriptのtrimで正規化し、空要素を除外して重複を取り除く。大文字小文字は別名として保存する。POSTの省略は[]、PATCHの省略は既存関連を維持、明示的な[]（正規化で空になった配列も含む）は全関連解除。既存UIはtagsを送らないので、Tag付きEntryを編集してもTagは消えない。
+
+POST / PATCH / 詳細GET / 一覧GETのEntry応答は既存項目にtags: string[]を追加する。Tagなしは[]。返却順はPostgreSQLのCOLLATE "C"による名前昇順（UTF-8のバイト順）に統一する。詳細・一覧とも同じSELECT投影で関連名を配列集約し、外側の取得元はentriesのみとする。Entryの重複も、Entryごとの追加DB問い合わせも発生しない。検索・所属条件・一覧のcreatedAt DESC, id DESCは維持する。
+
+### 保存の原子性と並行実行
+
+既存のdrizzle-orm/neon-httpのbatch()を使う。インストール済みDrizzleの実装で、batchがNeon client.transactionへSQL群を1回渡すこと、対話的transaction()は非対応であることを確認した。[Drizzle Batch API](https://orm.drizzle.team/docs/batch-api)、[Neonドライバー設定](https://github.com/neondatabase/serverless/blob/main/CONFIG.md)も参照。依存追加やWebSocket接続への変更はしない。Neonクライアント生成時に分離レベルReadCommittedを明示する。
+
+タグを指定した保存は次の5 SQLを1つのトランザクションで順に実行する。
+
+1. EntryをINSERT、またはProject ID AND Entry IDを条件にUPDATE。作成時はbatch内で同じIDを参照できるようNodeのrandomUUIDでUUIDを先に生成する。更新は行ロックをcommitまで保持するため、同じEntryの並行更新はここで直列化する。
+2. 対象Entryが指定Projectに存在する場合だけTagをINSERT。名前のC順で登録し、ON CONFLICT(name) DO NOTHINGで同名を再利用する。順序をそろえて共有Tagのロック競合を抑える。
+3. 所属条件で対象を限定し、そのEntryの既存関連を削除。
+4. 同じ所属条件と指定Tag名で関連をINSERT。別statementのREAD COMMITTEDスナップショットで、競合相手がコミットしたTagも参照する。単一の書き込みCTEでDO NOTHING後に古いスナップショットを参照する方式は採用しない。
+5. 同じトランザクション内で更新後EntryとTag配列をSELECT。
+
+PATCHでtags省略なら1と5だけを同じbatchで実行し、関連を触らない。対象なし・別Project所属では各Tag書き込みも所属条件によって0件となり、共有Tagにも変更を残さず404。どのSQLでも失敗するとトランザクション全体が失敗する。Project外部キー違反の404変換と、内部詳細を含めない500は維持する。
+
+### 適用と検証の範囲
+
+生成した0002_dizzy_pet_avengers.sqlは新しい2テーブルと制約の追加だけ。既存0000/0001を変更せず、既存Entryは関連0件として扱う。**本STEPでは実Neonへのmigration適用・DB操作を行っていない。新APIをDB接続環境で使う前に0002を適用する必要がある。** 手順はdatabase.md参照。
+
+Vitestは実DrizzleのSQL生成・結果マッピングを使い、Neon実行境界をモックする。batchの単一トランザクション呼び出し・SQL順序・所属条件・競合時の同名再利用SQL・省略/[]・関連削除の外部キーを検証する。APIテストはTag入力と応答・安全なエラーを確認し、PlaywrightはTagなし送信を続ける既存UIを回帰確認する。**実DBでの並行動作、rollback、migration適用は未検証であり、モック通過をその実証とは扱わない。**

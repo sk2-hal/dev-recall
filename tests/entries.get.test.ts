@@ -28,7 +28,7 @@ it('Projectなしは404、Entryを検索しない', async () => {
   expect(listEntries).not.toHaveBeenCalled()
 })
 it.each([false, true])('Entry一覧とISO日時を返す（Entryあり: %s）', async (exists) => {
-  const rows = exists ? [{ id: 'entry-id', projectId: id, title: 'Title', body: 'Body', types: ['decision', 'note'] as ('decision' | 'note')[], createdAt: project.createdAt, updatedAt: project.updatedAt }] : []
+  const rows = exists ? [{ tags: ['Nuxt', 'nuxt'], id: 'entry-id', projectId: id, title: 'Title', body: 'Body', types: ['decision', 'note'] as ('decision' | 'note')[], createdAt: project.createdAt, updatedAt: project.updatedAt }] : []
   vi.mocked(listEntries).mockResolvedValue(rows)
   const response = await get(id.toUpperCase())
   expect(response.status).toBe(200)

@@ -8,5 +8,6 @@ export function getDb() {
     throw new Error('DATABASE_URL is required')
   }
 
-  return drizzle(neon(databaseUrl))
+  // batch内の後続SQLが、同名Tagの競合解決後にコミットされた行を参照できるよう明示する。
+  return drizzle(neon(databaseUrl, { isolationLevel: 'ReadCommitted' }))
 }

@@ -15,6 +15,13 @@
       "when": 1790521129612,
       "tag": "0001_dry_malice",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791218194181,
+      "tag": "0002_dizzy_pet_avengers",
+      "breakpoints": true
     }
   ]
 }
