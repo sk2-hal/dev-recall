@@ -164,6 +164,7 @@ useSeoMeta({ title: 'Project詳細 | DevRecall' })
                   {{ entryTypeLabels[type] }}
                 </UBadge>
               </div>
+              <EntryTags :tags="entry.tags" />
               <p class="mt-2 line-clamp-3 whitespace-pre-wrap text-muted wrap-anywhere">
                 {{ entry.body.length > 200 ? `${entry.body.slice(0, 200)}…` : entry.body }}
               </p>

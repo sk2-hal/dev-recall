@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { validateEntry } from '../../../../../utils/entry-form'
+import { validateEntry, normalizeTags } from '../../../../../utils/entry-form'
 import type { EntryType } from '#shared/entry-types'
 
 const route = useRoute()
@@ -9,9 +9,9 @@ const { data: entry, status, error, refresh } = useFetch(() => `/api/projects/${
   server: false,
   retry: 0
 })
-const state = ref({ title: '', body: '', types: [] as EntryType[] })
+const state = ref({ title: '', body: '', types: [] as EntryType[], tags: [] as string[] })
 watch(entry, (value) => {
-  if (value) state.value = { title: value.title, body: value.body, types: [...value.types] }
+  if (value) state.value = { title: value.title, body: value.body, types: [...value.types], tags: [...(value.tags ?? [])] }
 }, { immediate: true })
 const isSaving = ref(false)
 const saveError = ref('')
@@ -24,7 +24,7 @@ async function saveEntry() {
     await $fetch(`/api${entryPath.value}`, {
       method: 'PATCH',
       retry: 0,
-      body: { title: state.value.title.trim(), body: state.value.body.trim(), types: [...state.value.types] }
+      body: { title: state.value.title.trim(), body: state.value.body.trim(), types: [...state.value.types], tags: normalizeTags(state.value.tags) }
     })
   } catch (error) {
     saveError.value = error !== null && typeof error === 'object' && 'statusCode' in error && error.statusCode === 400

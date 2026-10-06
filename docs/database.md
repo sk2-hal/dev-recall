@@ -121,7 +121,7 @@ WHERE id = '<返ったEntry UUID>'::uuid;
 
 Typeはdecision / problem / solution / learning / noteの5種類、1〜5件・重複なし。noteは他の4種類に分類しにくい汎用メモ用。note単独および5種類すべての指定でも201と保存結果を確認する。
 
-## STEP 6-14：Tagマイグレーション（未適用）
+## STEP 6-14：Tagマイグレーション
 
 **実装・自動テスト時点で0002は実Neonへ未適用。実NeonへのDB操作も行っていない。** 新しいAPIはTagのSELECTを行うため、DB接続環境ではAPI更新前にこのmigrationが必要になる。スキーマ追加後も従来のEntryデータを変更せず、旧APIはそのまま利用できる。
 
@@ -145,3 +145,7 @@ Typeはdecision / problem / solution / learning / noteの5種類、1〜5件・�
 接続は既存Neon HTTPのまま。batch内の各SQLはREAD COMMITTEDで実行し、Entry更新による行ロック、Tag名の一意制約とON CONFLICT DO NOTHING、その後の別SQLによるTag取得を組み合わせる。詳細はarchitecture.mdのSTEP 6-14を参照。
 
 検証コマンド：pnpm lint、pnpm typecheck、pnpm test、pnpm test:e2e --workers=2、pnpm build、git diff --check。Playwrightは専用サーバーでDATABASE_URLを空にし、通常の.envを読まずAPIをモックする。
+
+## 2026-10-07 適用記録
+
+ユーザー承認により、ローカル設定先Neonへ0002_dizzy_pet_avengers.sqlを適用済み。適用前は0000/0001のみ、Tag用テーブルなし。適用後は履歴のSQLハッシュ一致とtags/entry_tagsの存在を確認した。既存データの削除操作は行っていない。上記の「未適用」は実装時点の記録である。実DBのTag操作・並行実行・rollbackの機能確認は未実施。

@@ -101,6 +101,7 @@ useSeoMeta({ title: 'Entry詳細 | DevRecall' })
           {{ entryTypeLabels[type] }}
         </UBadge>
       </div>
+      <EntryTags :tags="entry.tags" />
       <p class="mt-4 text-sm text-muted">
         作成日時：
         <time :datetime="entry.createdAt">{{ new Date(entry.createdAt).toLocaleString('ja-JP') }}</time>

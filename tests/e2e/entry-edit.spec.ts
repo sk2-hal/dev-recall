@@ -24,7 +24,7 @@ test('詳細から編集し、初期値・必須検証・Note・二重送信防�
     }
     expect(route.request().method()).toBe('PATCH')
     patches++
-    expect(route.request().postDataJSON()).toEqual({ title: '新しいTitle', body: '新しいBody', types: ['learning', 'note'] })
+    expect(route.request().postDataJSON()).toEqual({ title: '新しいTitle', body: '新しいBody', types: ['learning', 'note'], tags: ['既存Tag'] })
     await pending
     saved = { ...entry, ...route.request().postDataJSON(), updatedAt: '2026-10-05T00:00:00.000Z' }
     await route.fulfill({ json: saved })

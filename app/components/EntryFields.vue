@@ -40,4 +40,18 @@ const typeItems = entryTypes.map(value => ({ value, label: entryTypeLabels[value
       :items="typeItems"
     />
   </UFormField>
+  <UFormField
+    label="Tag"
+    name="tags"
+    description="任意。Enterで追加し、×で削除できます。大文字・小文字は区別します。"
+  >
+    <UInputTags
+      v-model="state.tags"
+      class="w-full"
+      placeholder="Tagを入力"
+      add-on-blur
+      :delimiter="/$^/"
+      :convert-value="(value: string) => value.trim()"
+    />
+  </UFormField>
 </template>
