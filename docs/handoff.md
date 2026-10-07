@@ -1,8 +1,8 @@
-# DevRecall 引き継ぎ（2026-10-07）
+# DevRecall 引き継ぎ（2026-10-08）
 
-- リポジトリ：C:\Users\seiki\dev\dev-recall。main基点c520b31（STEP 6-15までpush済み）。以後もWorkのみで実装・必要なテスト・差分確認を行う。
-- STEP 6-16：Project内のキーワード検索にTag名を追加。タイトル・本文・TagのOR全体にProjectのAND条件を適用。Tagは相関EXISTSで判定し複数一致でもEntryを増幅させない。空欄時一覧、ILIKE、特殊文字のエスケープ、並び順を維持。一覧には一致Tagだけでなく全Tagを表示。
-- 変更：server/db/entries.ts、Project詳細の入力案内、DBテスト、検索E2E、設計・要件文書。本STEPでAPI仕様・DBスキーマ・依存変更なし。ユーザー依頼によりcommit・push対象。確定コミットはgit logで確認。
-- 検証：lint/typecheckとVitest 211件成功。検索E2E 3件（--workers=2指定、同一ファイルのため実際は1 worker）・build成功。git diff --check成功。テストはDB/APIをモックし、実DB検索は未確認。
-- DB：0002は2026-10-07に承認済みのローカル設定先Neonへ適用済み。履歴ハッシュ・Tag用2テーブル存在確認済み。Tag保存・編集・検索など実DBの受け入れ確認、並行実行・rollbackは未実施。
-- 次：STEP 6-17として開発DBで主要操作の受け入れ確認、その後公開環境の設定・検証を進める。認証やAI構造化を先に追加しない。過去チャット全文を再取得せず本書と必要な設計箇所を参照。
+- リポジトリ：C:\Users\seiki\dev\dev-recall。mainの基点a453784（STEP 6-16までcommit・push済み）。Workのみで実装・必要なテスト・差分確認を行う。
+- STEP 7：MVP UI・UX仕上げ完了。Entry追加リンクを一覧先頭へ移動。一覧・検索結果の件数、0件時の次の操作、Project未作成時の案内、Title・Body・Typeの説明を追加。既存の検索・保存・エラー処理は維持。
+- 要件確認：Mustはタイトル・本文・Tagのキーワード検索。Type / Tag選択式フィルタはCouldで今回は対象外。API・DBスキーマ・依存変更なし。
+- 検証：lint / typecheck / Vitest 211件、関連E2E 9件（検索・Entry一覧・Tag作成編集・Project一覧）、build成功。差分確認済み。自動テストはDB/APIをモックし実Neonには接続しない。本STEPは未commit・未push。
+- DB：0002は2026-10-07に承認済みのローカル設定先Neonへ適用済み。履歴ハッシュとTag用2テーブルの存在確認済み。実DBでのTag保存・編集・検索、並行実行・rollbackの受け入れ確認は未実施。
+- 次：元のロードマップに従いSTEP 8（総合テスト・品質確認）。開発DBの接続先・テストデータの扱いを確認して主要操作と再読込後の永続化、Project間の分離を検証する。その後STEP 9（Vercel + Neon本番環境）、STEP 10（Web公開・最終確認）。STEP 6-17は設けない。認証・AI構造化は先に追加しない。

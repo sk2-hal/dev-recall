@@ -74,9 +74,15 @@ useSeoMeta({ title: 'Project詳細 | DevRecall' })
       </p>
       <UCard class="mt-8">
         <template #header>
-          <h2 class="text-lg font-semibold text-highlighted">
-            Entries
-          </h2>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-lg font-semibold text-highlighted">
+              Entries
+            </h2>
+            <UButton
+              :to="`/projects/${project.id}/entries/new`"
+              label="Entryを追加"
+            />
+          </div>
         </template>
         <form
           class="mb-4 space-y-2"
@@ -85,6 +91,7 @@ useSeoMeta({ title: 'Project詳細 | DevRecall' })
           <UFormField
             label="Entry検索"
             name="search"
+            description="タイトル・本文・Tagを部分一致で検索します。空欄で検索すると全件表示に戻ります。"
           >
             <UInput
               v-model="searchInput"
@@ -131,55 +138,62 @@ useSeoMeta({ title: 'Project詳細 | DevRecall' })
             @click="refreshEntries()"
           />
         </div>
-        <p
+        <div
           v-else-if="!entries?.length"
-          class="text-muted"
+          role="status"
         >
-          {{ searchKeyword ? '検索条件に一致するEntryがありません。' : 'まだEntryがありません' }}
-        </p>
-        <ul
-          v-else
-          class="space-y-4"
-        >
-          <li
-            v-for="entry in entries"
-            :key="entry.id"
+          <p class="text-muted">
+            {{ searchKeyword ? '検索条件に一致するEntryがありません。' : 'まだEntryがありません' }}
+          </p>
+          <p class="mt-2 text-sm text-muted">
+            {{ searchKeyword ? '別のキーワードで検索するか、クリアして全件表示に戻してください。' : '「Entryを追加」から、最初の判断・問題・解決・学びを記録しましょう。' }}
+          </p>
+        </div>
+        <template v-else>
+          <p
+            role="status"
+            class="mb-4 text-sm text-muted"
           >
-            <UCard>
-              <h3 class="text-lg font-semibold wrap-anywhere">
-                <NuxtLink
-                  :to="`/projects/${entry.projectId}/entries/${entry.id}`"
-                  class="text-primary hover:underline"
-                >
-                  {{ entry.title }}
-                </NuxtLink>
-              </h3>
-              <div class="mt-2 flex flex-wrap gap-2">
-                <UBadge
-                  v-for="type in entry.types"
-                  :key="type"
-                  color="neutral"
-                  variant="subtle"
-                >
-                  {{ entryTypeLabels[type] }}
-                </UBadge>
-              </div>
-              <EntryTags :tags="entry.tags" />
-              <p class="mt-2 line-clamp-3 whitespace-pre-wrap text-muted wrap-anywhere">
-                {{ entry.body.length > 200 ? `${entry.body.slice(0, 200)}…` : entry.body }}
-              </p>
-              <p class="mt-2 text-sm text-muted">
-                作成日時：
-                <time :datetime="entry.createdAt">{{ new Date(entry.createdAt).toLocaleString('ja-JP') }}</time>
-              </p>
-            </UCard>
-          </li>
-        </ul>
-        <UButton
-          :to="`/projects/${project.id}/entries/new`"
-          label="Entryを追加"
-          class="mt-4"
-        />
+            {{ searchKeyword ? `検索結果：${entries?.length}件` : `${entries?.length}件のEntry` }}
+          </p>
+          <ul
+            class="space-y-4"
+          >
+            <li
+              v-for="entry in entries"
+              :key="entry.id"
+            >
+              <UCard>
+                <h3 class="text-lg font-semibold wrap-anywhere">
+                  <NuxtLink
+                    :to="`/projects/${entry.projectId}/entries/${entry.id}`"
+                    class="text-primary hover:underline"
+                  >
+                    {{ entry.title }}
+                  </NuxtLink>
+                </h3>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <UBadge
+                    v-for="type in entry.types"
+                    :key="type"
+                    color="neutral"
+                    variant="subtle"
+                  >
+                    {{ entryTypeLabels[type] }}
+                  </UBadge>
+                </div>
+                <EntryTags :tags="entry.tags" />
+                <p class="mt-2 line-clamp-3 whitespace-pre-wrap text-muted wrap-anywhere">
+                  {{ entry.body.length > 200 ? `${entry.body.slice(0, 200)}…` : entry.body }}
+                </p>
+                <p class="mt-2 text-sm text-muted">
+                  作成日時：
+                  <time :datetime="entry.createdAt">{{ new Date(entry.createdAt).toLocaleString('ja-JP') }}</time>
+                </p>
+              </UCard>
+            </li>
+          </ul>
+        </template>
       </UCard>
     </template>
   </UContainer>

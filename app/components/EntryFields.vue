@@ -10,6 +10,7 @@ const typeItems = entryTypes.map(value => ({ value, label: entryTypeLabels[value
   <UFormField
     label="Title"
     name="title"
+    description="判断・問題・学びの内容が分かる短いタイトルを付けます。"
     required
   >
     <UInput
@@ -21,6 +22,7 @@ const typeItems = entryTypes.map(value => ({ value, label: entryTypeLabels[value
   <UFormField
     label="Body"
     name="body"
+    description="背景や理由、手順などを記録します。改行はそのまま表示されます。"
     required
   >
     <UTextarea
@@ -33,7 +35,7 @@ const typeItems = entryTypes.map(value => ({ value, label: entryTypeLabels[value
     label="Type"
     name="types"
     required
-    description="Noteは他の4種類に分類しにくい汎用メモです。"
+    description="1つ以上選択してください（複数選択可）。Noteは他の4種類に分類しにくい汎用メモです。"
   >
     <UCheckboxGroup
       v-model="state.types"

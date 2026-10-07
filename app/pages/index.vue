@@ -189,7 +189,7 @@ useSeoMeta({
       v-else
       icon="i-lucide-folder"
       title="Projectはまだありません"
-      description="作成したProjectがここに表示されます。"
+      description="「新規Project」から、知識を整理するProjectを作成しましょう。"
     />
   </UContainer>
 </template>

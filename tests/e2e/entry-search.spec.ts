@@ -22,10 +22,12 @@ test('送信時だけ検索し、タイトル・本文・Tagの結果と導線�
   await page.goto(projectPath)
   await expect(page.getByRole('heading', { name: project.name })).toBeVisible({ timeout: 15000 })
   await expect(page.getByRole('heading', { name: unrelated.title })).toBeVisible()
+  await expect(page.getByRole('status')).toHaveText('4件のEntry')
   await page.getByLabel('Entry検索', { exact: true }).fill('  Nuxt UI  ')
   expect(queries).toEqual([null])
   await page.getByRole('button', { name: '検索', exact: true }).click()
   await expect(page.getByText('検索条件：Nuxt UI', { exact: true })).toBeVisible()
+  await expect(page.getByRole('status')).toHaveText('検索結果：3件')
   await expect(page.getByRole('heading', { name: unrelated.title })).toHaveCount(0)
   for (const item of [entry, bodyEntry, tagEntry]) {
     await expect(page.getByRole('link', { name: item.title })).toHaveAttribute('href', `${projectPath}/entries/${item.id}`)
@@ -37,6 +39,7 @@ test('送信時だけ検索し、タイトル・本文・Tagの結果と導線�
   await page.getByRole('button', { name: 'クリア' }).click()
   await expect(page.getByRole('heading', { name: unrelated.title })).toBeVisible()
   await expect(page.getByLabel('Entry検索', { exact: true })).toHaveValue('')
+  await expect(page.getByRole('status')).toHaveText('4件のEntry')
   expect(queries).toEqual([null, 'Nuxt UI', null])
 })
 
@@ -62,6 +65,7 @@ test('空のProjectと検索0件を区別し、失敗時は適用済み条件で
   await page.getByLabel('Entry検索', { exact: true }).fill('まだ送信していない語')
   await page.getByRole('button', { name: 'Entry一覧を再試行' }).click()
   await expect(page.getByText('検索条件に一致するEntryがありません。')).toBeVisible()
+  await expect(page.getByRole('status')).toContainText('別のキーワードで検索するか、クリアして全件表示に戻してください。')
   await expect(page.getByText('まだEntryがありません', { exact: true })).toHaveCount(0)
   expect(queries).toEqual([null, keyword, keyword])
   await page.getByRole('button', { name: 'クリア' }).click()
