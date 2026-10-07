@@ -3,7 +3,7 @@ import { createError, defineEventHandler, getRouterParam } from 'h3'
 import { getProject } from '../../db/projects'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
+  const id = getRouterParam(event, 'projectId')
   if (!isUuid(id)) {
     throw createError({ statusCode: 400, message: 'Project IDはUUID形式で指定してください。' })
   }

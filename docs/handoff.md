@@ -1,8 +1,9 @@
 # DevRecall 引き継ぎ（2026-10-08）
 
-- リポジトリ：C:\Users\seiki\dev\dev-recall。mainの基点a453784（STEP 6-16までcommit・push済み）。Workのみで実装・必要なテスト・差分確認を行う。
-- STEP 7：MVP UI・UX仕上げ完了。Entry追加リンクを一覧先頭へ移動。一覧・検索結果の件数、0件時の次の操作、Project未作成時の案内、Title・Body・Typeの説明を追加。既存の検索・保存・エラー処理は維持。
-- 要件確認：Mustはタイトル・本文・Tagのキーワード検索。Type / Tag選択式フィルタはCouldで今回は対象外。API・DBスキーマ・依存変更なし。
-- 検証：lint / typecheck / Vitest 211件、関連E2E 9件（検索・Entry一覧・Tag作成編集・Project一覧）、build成功。差分確認済み。自動テストはDB/APIをモックし実Neonには接続しない。本STEPは未commit・未push。
-- DB：0002は2026-10-07に承認済みのローカル設定先Neonへ適用済み。履歴ハッシュとTag用2テーブルの存在確認済み。実DBでのTag保存・編集・検索、並行実行・rollbackの受け入れ確認は未実施。
-- 次：元のロードマップに従いSTEP 8（総合テスト・品質確認）。開発DBの接続先・テストデータの扱いを確認して主要操作と再読込後の永続化、Project間の分離を検証する。その後STEP 9（Vercel + Neon本番環境）、STEP 10（Web公開・最終確認）。STEP 6-17は設けない。認証・AI構造化は先に追加しない。
+- リポジトリ：C:\Users\seiki\dev\dev-recall。STEP 7を07618fdでmainへcommit・push済み。以後もWorkのみで作業する。
+- STEP 8：主要操作の総合テスト・開発DB受け入れ確認完了。実DB検証で本番ビルドのEntry詳細APIが404になる問題を発見。Project詳細APIの動的パラメータをidからprojectIdに統一して修正し、実Nitroルートの回帰テストを追加。URL形状・DB・依存は変更なし。
+- 検証：修正後lint / typecheck / Vitest 211件 / 全E2E 29件 / build成功。実APIで作成・複数Type・Tag正規化・タイトル本文Tag検索・特殊文字・Project間分離・Tag省略と全解除・削除を確認。実ブラウザで編集・再読込・新規コンテキストでの永続化確認。詳細はacceptance.md。
+- DB：ユーザーがローカル設定先Neonを開発用と確認し、専用データの作成・検証・後片付けを承認。失敗試行も含め専用Project・Entry・Tagを削除し残存なし。既存データ・接続設定・schemaに変更なし。0002は2026-10-07適用済み。
+- 限界：並行更新・途中失敗rollbackは今回未実施。公開環境の確認はSTEP 9〜10に残る。
+- Git：STEP 8の修正・テスト・文書はユーザー依頼により本変更でcommit・push対象。確定コミットはgit logで確認。
+- 次：STEP 9（Vercel + Neon本番環境）、STEP 10（Web公開・最終確認）。公開デモは認証なし・公開可能なサンプルのみ。認証やAI構造化を先に追加しない。STEP 6-17は設けず、元のロードマップを使う。

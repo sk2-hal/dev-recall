@@ -1,13 +1,13 @@
 import { createApp, createRouter, toWebHandler } from 'h3'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getProject } from '../server/db/projects'
-import projectGet from '../server/api/projects/[id].get'
+import projectGet from '../server/api/projects/[projectId].get'
 
 vi.mock('../server/db/projects', () => ({ getProject: vi.fn() }))
 beforeEach(() => vi.resetAllMocks())
 
 const app = createApp()
-app.use(createRouter().get('/api/projects/:id', projectGet))
+app.use(createRouter().get('/api/projects/:projectId', projectGet))
 const handleRequest = toWebHandler(app)
 const id = 'b7427f31-2432-4aa8-a766-5ecbb333ff7b'
 const get = (value: string) => handleRequest(new Request(`http://localhost/api/projects/${encodeURIComponent(value)}`))

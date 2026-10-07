@@ -17,3 +17,13 @@ test('Entry APIの空本文・重複TypeはDB接続なしで400', async ({ reque
     expect(response.status()).toBe(400)
   }
 })
+
+// APIをモックせず、実際のNitroルーターが各HTTPメソッドを解決することを確認する。
+test('Project詳細・Entry詳細編集削除のルートが入力検証まで到達する', async ({ request }) => {
+  const project = await request.get('/api/projects/invalid')
+  expect(project.status()).toBe(400)
+  for (const method of ['GET', 'PATCH', 'DELETE']) {
+    const response = await request.fetch('/api/projects/invalid/entries/invalid', { method })
+    expect(response.status()).toBe(400)
+  }
+})
