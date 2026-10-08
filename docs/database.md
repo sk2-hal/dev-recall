@@ -148,4 +148,8 @@ Typeはdecision / problem / solution / learning / noteの5種類、1〜5件・�
 
 ## 2026-10-07 適用記録
 
-ユーザー承認により、ローカル設定先Neonへ0002_dizzy_pet_avengers.sqlを適用済み。適用前は0000/0001のみ、Tag用テーブルなし。適用後は履歴のSQLハッシュ一致とtags/entry_tagsの存在を確認した。既存データの削除操作は行っていない。上記の「未適用」は実装時点の記録である。実DBのTag操作・並行実行・rollbackの機能確認は未実施。
+ユーザー承認により、ローカル設定先Neonへ0002_dizzy_pet_avengers.sqlを適用済み。適用前は0000/0001のみ、Tag用テーブルなし。適用後は履歴のSQLハッシュ一致とtags/entry_tagsの存在を確認した。既存データの削除操作は行っていない。上記の「未適用」や手動確認の未実施記載は各STEP当時の記録である。実DBのTag操作は後続のSTEP 8で確認済み（[acceptance.md](./acceptance.md)）。並行実行・rollbackは未検証。
+
+## 2026-10-08 本番適用記録
+
+ユーザーから共有されたSTEP 9の完了実績として、本番用Neon `devrecall-production`へのマイグレーション適用が成功した。VercelへのデプロイとSTEP 10の主要操作・保存保持も確認済み。詳細は[deployment.md](./deployment.md)と[acceptance.md](./acceptance.md)を参照。今回の文書更新ではDB操作を行っていない。

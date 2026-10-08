@@ -16,6 +16,8 @@
 
 ## 現在のリポジトリ
 
+2026-10-08時点ではSTEP 9・10まで完了し、MVPのMust要件を達成している。以下のスターター状態と各STEPの未導入・未検証記載は当時の実装履歴。後続の検証結果は[acceptance.md](./acceptance.md)、本番構成と公開確認は[deployment.md](./deployment.md)を参照。並行更新・rollbackは引き続き未検証。
+
 文書作成時点ではNuxt 4とNuxt UIのスターター。`app/`、`nuxt.config.ts`、pnpmのlockfileが存在し、`package.json`のpackageManagerは`pnpm@12.5.1`。既存CIはlintとtypecheckを実行する。
 
 Drizzle、DBスキーマ、API、Vitest、Playwrightはこれから導入する。本書の以下の構成は実装方針であり、実装済みの機能ではない。既存のトップページにはprerender設定があるため、Project一覧の実装時に動的データ取得と矛盾しないよう見直す。
